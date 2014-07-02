@@ -60,6 +60,10 @@ macro = (expr, env) ->
     str = params[0]
     return makeRet "\"#{str}\"", env
 
+  if func is 'regex'
+    str = params[0]
+    return makeRet "/#{str}/", env
+
   if func is 'sentence'
     str = params.join(' ')
     return makeRet "\"#{str}\"", env
@@ -224,6 +228,9 @@ macro = (expr, env) ->
     .join('\n')
     js = "else if (#{cond}) {\n#{lines}\n}"
     return js
+
+  if func in ['break', 'continue']
+    return "#{func};"
 
   console.log 'stopped at:', expr
   throw new Error "no macro is found"

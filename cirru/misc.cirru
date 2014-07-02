@@ -7,6 +7,8 @@ set b #t
 
 number 1.4
 string x
+regex ^\s$
+regex "^\\s-\"$"
 sentence this is a string
 
 array 1 2 3 (= nothing) #t (= #t)
