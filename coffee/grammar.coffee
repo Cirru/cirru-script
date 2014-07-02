@@ -7,6 +7,11 @@ exports.expand = expand = (expr, env) ->
     literal expr
 
 literal = (content) ->
+  if content is '#t'
+    return 'true'
+  if content is '#f'
+    return 'false'
+
   guessNumber = Number content
   if isNaN guessNumber
     return "'#{content}'"
@@ -23,16 +28,38 @@ macro = (expr, env) ->
   func = expr[0]
   params = expr[1..]
 
-  switch
-    when func is 'set'
-      key = params[0]
-      value = expand params[1]
-      if key in env.vars then js = "#{key}=#{value}"
-      else js = "var #{key}=#{value}"
-      env.add key
-      return makeRet js, env
+  if func is 'set'
+    key = params[0]
+    scope = env.spawn expr: yes
+    value = expand params[1], scope
+    if key in env.vars then js = "#{key}=#{value}"
+    else js = "var #{key}=#{value}"
+    env.add key
+    return makeRet js, env
 
-    when func is 'number'
-      value = params[0]
-      js = "#{value}"
-      return makeRet js, env
+  if func is 'number'
+    value = params[0]
+    js = "#{value}"
+    return makeRet js, env
+
+  if func is '--'
+    return ''
+
+  if func is 'number'
+    js = params[0]
+    return makeRet js, env
+
+  if func is 'string'
+    str = params[0]
+    return makeRet "\"#{str}\"", env
+
+  if func is 'sentence'
+    str = params.join(' ')
+    return makeRet "\"#{str}\"", env
+
+  if func is 'array'
+    scope = env.spawn expr: yes
+    items = params.map (param) ->
+      expand param, scope
+    js = "[#{items.join(',')}]"
+    return makeRet js, env

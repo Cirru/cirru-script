@@ -19,7 +19,8 @@ exports.compile = (code) ->
       if opts? then child.expr = opts.expr
       child
 
-  ast
+  codeList = ast
   .map (expr) ->
     grammar.expand expr, env
-  .join('')
+
+  codeList.join('')
