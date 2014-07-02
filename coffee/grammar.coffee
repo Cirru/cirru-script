@@ -147,9 +147,34 @@ macro = (expr, env) ->
     js = "(function(#{args.join(', ')}){\n#{body}\n})"
     return makeRet js, env
 
-  if func is '+'
+  if func in ['+', '-', '*', '/', '%', '&&', '||']
     scope = env.spawn expr: yes
     js = params
     .map (expr) -> expand expr, scope
-    .join(' + ')
+    .join(" #{func} ")
+    return makeRet js, env
+
+  if func in ['+=', '-=', '*=', '/=', '%=']
+    scope = env.spawn expr: yes
+    value = expand params[0], scope
+    delta = expand params[1], scope
+    js = "#{value} += #{delta}"
+    return makeRet js, env
+
+  if func is 'not'
+    scope = env.spawn expr: yes
+    value = expand params[0], scope
+    js = "! #{value}"
+    return makeRet js, env
+
+  if func in ['==', '!=', '>', '<', '>=', '<=']
+    pairs = []
+    scope = env.spawn expr: yes
+    args = params.map (expr) -> expand expr, scope
+    for i in [0...(args.length-1)]
+      j = i + 1
+      a = args[i]
+      b = args[j]
+      pairs.push "(#{a} #{func} #{b})"
+    js = pairs.join(' && ')
     return makeRet js, env

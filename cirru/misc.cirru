@@ -40,3 +40,8 @@ set c (.toUpperCase str)
 \ x (set aa 1) (+ aa x)
 
 set f (\ x (+ x 1))
+
++ a 1 2
++= a 1
+
+> 1 2 3
