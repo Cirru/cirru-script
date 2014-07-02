@@ -18,4 +18,19 @@ set d $ object (a (string google))
   c 1
   d $ array 1 2 (string string)
 
+1 c
+-1 c
+
+:b d
 .log console a 2
+.log console
+
+=.x d 3
+
+set d null
+
+new Array 1 2 3
+
+set x (:length c)
+set str (string str)
+set c (.toUpperCase str)

@@ -11,6 +11,8 @@ literal = (content, env) ->
     return 'true'
   if content is '#f'
     return 'false'
+  if content in ['null', 'undefined']
+    return 'null'
 
   guessNumber = Number content
   if content in env.vars or (not (isNaN guessNumber))
@@ -77,6 +79,26 @@ macro = (expr, env) ->
     js = "{#{pairs.join(', ')}}"
     return makeRet js, env
 
+  if func.match /^\d+$/
+    scope = env.spawn expr: yes
+    list = expand params[0], scope
+    js = "#{list}[#{func}]"
+    return makeRet js, env
+
+  if func.match /^-\d+$/
+    scope = env.spawn expr: yes
+    list = expand params[0], scope
+    js = "#{list}[#{list}.length - #{func}]"
+    return makeRet js, env
+
+  if func.match /^\:\S+$/
+    scope = env.spawn expr: yes
+    name = params[0]
+    if name instanceof Array
+      name = expand name, scope
+    js = "#{name}.#{func[1..]}"
+    return makeRet js, env
+
   if func[0] is '.'
     scope = env.spawn expr: yes
     name = params[0]
@@ -85,4 +107,21 @@ macro = (expr, env) ->
     args = params[1..].map (expr) ->
       expand expr, scope
     js = "(#{name})#{func}(#{args.join(', ')})"
+    return makeRet js, env
+
+  if func[0..1] is '=.'
+    scope = env.spawn expr: yes
+    name = params[0]
+    if name instanceof Array
+      name = expand name, expand
+    value = expand params[1], scope
+    js = "(#{name})#{func[1..]} = #{value}"
+    return makeRet js, env
+
+  if func is 'new'
+    scope = env.spawn expr: yes
+    name = params[0]
+    args = params[1..].map (expr) ->
+      expand expr, scope
+    js = "new #{name}(#{args.join(', ')})"
     return makeRet js, env
