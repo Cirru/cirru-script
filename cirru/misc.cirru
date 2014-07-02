@@ -34,3 +34,9 @@ new Array 1 2 3
 set x (:length c)
 set str (string str)
 set c (.toUpperCase str)
+
+\ x (+ x 1)
+\ (x y) (+ x y)
+\ x (set aa 1) (+ aa x)
+
+set f (\ x (+ x 1))

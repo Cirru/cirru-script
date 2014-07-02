@@ -125,3 +125,31 @@ macro = (expr, env) ->
       expand expr, scope
     js = "new #{name}(#{args.join(', ')})"
     return makeRet js, env
+
+  if func is '\\'
+    scope = env.spawn expr: yes
+    if params[0] instanceof Array
+      args = params[0]
+    else
+      args = [params[0]]
+    bodyScope = env.spawn expr: no
+    bodyScope.vars.push args...
+    body = params[1..]
+    .map (expr, index) ->
+      if (index + 2) is params.length
+        subScope = bodyScope.spawn expr: yes
+        retExpr = expand expr, subScope
+        "return #{retExpr};"
+      else
+        expand expr, bodyScope
+    .join('; ')
+
+    js = "(function(#{args.join(', ')}){\n#{body}\n})"
+    return makeRet js, env
+
+  if func is '+'
+    scope = env.spawn expr: yes
+    js = params
+    .map (expr) -> expand expr, scope
+    .join(' + ')
+    return makeRet js, env
