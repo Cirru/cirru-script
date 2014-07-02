@@ -2,8 +2,11 @@
 exports.expand = expand = (expr, env) ->
   if expr instanceof Array
     func = expr[0]
-    macro expr, env
+    js = macro expr, env
+    env.last = func
+    js
   else
+    env.last = null
     literal expr, env
 
 literal = (content, env) ->
@@ -22,7 +25,9 @@ literal = (content, env) ->
 
 makeRet = (code, env) ->
   if env.expr then "(#{code})"
-  else "#{code};"
+  else
+    if code.match /\}$/ then code
+    else "#{code};"
 
 # grammar rule that was defined
 
@@ -51,7 +56,7 @@ macro = (expr, env) ->
     js = params[0]
     return makeRet js, env
 
-  if func is 'string'
+  if func in ['string', '=']
     str = params[0]
     return makeRet "\"#{str}\"", env
 
@@ -142,7 +147,7 @@ macro = (expr, env) ->
         "return #{retExpr};"
       else
         expand expr, bodyScope
-    .join('; ')
+    .join('\n')
 
     js = "(function(#{args.join(', ')}){\n#{body}\n})"
     return makeRet js, env
@@ -167,7 +172,8 @@ macro = (expr, env) ->
     js = "! #{value}"
     return makeRet js, env
 
-  if func in ['==', '!=', '>', '<', '>=', '<=']
+  if func is '==' then func = '==='
+  if func in ['===', '!=', '>', '<', '>=', '<=']
     pairs = []
     scope = env.spawn expr: yes
     args = params.map (expr) -> expand expr, scope
@@ -178,3 +184,46 @@ macro = (expr, env) ->
       pairs.push "(#{a} #{func} #{b})"
     js = pairs.join(' && ')
     return makeRet js, env
+
+  if func is 'if'
+    scope = env.spawn expr: yes
+    cond = expand params[0], scope
+    bodyScope = env.spawn()
+    if bodyScope.expr
+      cons = expand params[0], bodyScope
+      alte = expand params[1], bodyScope
+      js = "((#{cond}) ? #{cons} : #{alte})"
+      return js
+    else
+      lines = params[1..]
+      .map (expr) -> expand expr, bodyScope
+      .join('\n')
+      js = "if (#{cond}) {\n#{lines}\n}"
+      return js
+
+  if func is 'else'
+    unless env.last in ['if', 'elseif']
+      console.log 'stopped at:', expr
+      throw new Error 'unexpected else'
+    scope = env.spawn()
+    lines = params
+    .map (expr) -> expand expr, scope
+    .join('\n')
+    js = "else {\n#{lines}\n}"
+    return makeRet js, env
+
+  if func is 'elseif'
+    unless env.last in ['if', 'elseif']
+      console.log 'stopped at:', expr
+      throw new Error 'unexpected elseif'
+    scope = env.spawn expr: yes
+    cond = expand params[0], scope
+    bodyScope = env.spawn()
+    lines = params[1..]
+    .map (expr) -> expand expr, bodyScope
+    .join('\n')
+    js = "else if (#{cond}) {\n#{lines}\n}"
+    return js
+
+  console.log 'stopped at:', expr
+  throw new Error "no macro is found"

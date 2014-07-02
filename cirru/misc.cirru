@@ -1,6 +1,6 @@
 
 set a 1
-set a (string "This is a string")
+set a (= "This is a string")
 set b #t
 
 -- this is comment
@@ -9,14 +9,14 @@ number 1.4
 string x
 sentence this is a string
 
-array 1 2 3 (string nothing) #t (string #t)
+array 1 2 3 (= nothing) #t (= #t)
 
-set c (array 1 (string nothing))
+set c (array 1 (= nothing))
 
-set d $ object (a (string google))
-  b (string reader)
+set d $ object (a (= google))
+  b (= reader)
   c 1
-  d $ array 1 2 (string string)
+  d $ array 1 2 (= string)
 
 1 c
 -1 c
@@ -32,7 +32,7 @@ set d null
 new Array 1 2 3
 
 set x (:length c)
-set str (string str)
+set str (= str)
 set c (.toUpperCase str)
 
 \ x (+ x 1)
@@ -45,3 +45,15 @@ set f (\ x (+ x 1))
 += a 1
 
 > 1 2 3
+
+if (> 2 1) (+ a 1)
+else 2
+
+if (> a 2)
+  .log console (= "large")
+elseif (> a 1)
+  .log console (= "still good")
+else
+  .log console (= "so so")
+
+set a $ if (> 2 1) #t #f

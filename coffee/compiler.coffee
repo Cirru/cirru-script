@@ -12,7 +12,7 @@ exports.compile = (code) ->
         @vars.push name
     spawn: (opts) ->
       child =
-        expr: yes
+        expr: @expr
         vars: @vars.concat()
         spawn: @spawn
         add: @add
