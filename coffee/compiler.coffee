@@ -23,4 +23,4 @@ exports.compile = (code) ->
   .map (expr) ->
     grammar.expand expr, env
 
-  codeList.join('')
+  codeList.join('\n')
