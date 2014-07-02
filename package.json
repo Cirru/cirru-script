@@ -1,0 +1,22 @@
+{
+  "name": "cirru-js",
+  "version": "0.0.1",
+  "description": "Compile to childish JavaScript",
+  "main": "index.js",
+  "scripts": {
+    "test": "coffee make.coffee test"
+  },
+  "keywords": [
+    "cirru"
+  ],
+  "author": "jiyinyiyong",
+  "license": "MIT",
+  "devDependencies": {
+    "mission": "0.0.7-7",
+    "shelljs": "^0.3.0",
+    "uglify": "*"
+  },
+  "dependencies": {
+    "cirru-parser": "^0.9.0-1"
+  }
+}
