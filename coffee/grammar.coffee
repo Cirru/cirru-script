@@ -267,5 +267,20 @@ macro = (expr, env) ->
     js = "switch (#{name}){#{args.join('')}}"
     return makeRet js, env
 
+  if func is 'for'
+    object = expand params[0][0], env
+    valueName = params[0][1]
+    indexName = params[0][2] or '$i'
+    env.vars.push valueName, indexName
+    args = params[1..].map (item) ->
+      expand item, env
+    js =
+      "var #{indexName}, #{valueName};\n" +
+      "for (#{indexName} in #{object}) {\n" +
+      "#{valueName} = #{object}[#{indexName}];\n" +
+      "#{args.join('\n')}\n" +
+      "}"
+    return makeRet js, env
+
   console.log 'stopped at:', expr
   throw new Error "no macro is found"

@@ -68,3 +68,6 @@ switch a
   1 (.log console 1)
   2 (.log console 2)
   else (.log console (= "something else"))
+
+set a $ array 2 3 4
+for (a x i) (.log console x i)
