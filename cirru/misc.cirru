@@ -27,6 +27,10 @@ set d $ object (a (= google))
 .log console a 2
 .log console
 
+set demo $ object
+  call $ \ x (.log console x) (. this call)
+. demo (.call 1) (.call 4)
+
 =.x d 3
 
 set d null

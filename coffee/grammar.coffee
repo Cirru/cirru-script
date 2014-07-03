@@ -108,6 +108,25 @@ macro = (expr, env) ->
     js = "#{name}.#{func[1..]}"
     return makeRet js, env
 
+  if func is '.'
+    scope = env.spawn expr: yes
+    name = params[0]
+    if name instanceof Array
+      name = expand name, scope
+    chains = params[1..]
+    .map (item) ->
+      method = item[0]
+      if method[0] is '.'
+        args = item[1..]
+        .map (arg) -> expand arg, scope
+        .join(', ')
+        return "#{method}(#{args})"
+      else if method[0] is ':'
+        ".#{method[1..]}"
+    .join('')
+    js = "#{name}#{chains}"
+    return makeRet js, env
+
   if func[0] is '.'
     scope = env.spawn expr: yes
     name = params[0]
