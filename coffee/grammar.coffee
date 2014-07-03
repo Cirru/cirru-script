@@ -282,5 +282,14 @@ macro = (expr, env) ->
       "}"
     return makeRet js, env
 
+  if func is 'while'
+    scope = env.spawn expr: yes
+    cond = expand params[0], scope
+    args = params[1..]
+    .map (item) -> expand item, env
+    .join('\n')
+    js = "while(#{cond}) {\n#{args}\n}"
+    return makeRet js, env
+
   console.log 'stopped at:', expr
   throw new Error "no macro is found"

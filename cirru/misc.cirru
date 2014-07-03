@@ -71,3 +71,6 @@ switch a
 
 set a $ array 2 3 4
 for (a x i) (.log console x i)
+
+set a 0
+while (< a 10) (+= a 1) (.log console a)
