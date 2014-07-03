@@ -251,5 +251,21 @@ macro = (expr, env) ->
   if func in ['break', 'continue']
     return "#{func};"
 
+  if func is 'switch'
+    scope = env.spawn expr: yes
+    name = expand params[0], scope
+    args = params[1..].map (item) ->
+      if item[0] is 'else'
+        body = item[1..].map (sm) ->
+          expand sm, env
+        "default: #{body}"
+      else
+        sample = expand item[0], env
+        body = item[1..].map (sm) ->
+          expand sm, env
+        "case #{sample}: #{body}break;"
+    js = "switch (#{name}){#{args.join('')}}"
+    return makeRet js, env
+
   console.log 'stopped at:', expr
   throw new Error "no macro is found"

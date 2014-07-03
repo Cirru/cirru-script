@@ -63,3 +63,8 @@ else
   .log console (= "so so")
 
 set a $ if (> 2 1) #t #f
+
+switch a
+  1 (.log console 1)
+  2 (.log console 2)
+  else (.log console (= "something else"))
