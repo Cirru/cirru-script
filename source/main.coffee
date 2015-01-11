@@ -1,5 +1,5 @@
 
-parser = require 'cirru-parser'
+compiler = require './script/compiler'
 
 setSource = (code) ->
   source = document.querySelector '#source'
@@ -15,6 +15,5 @@ req.send()
 req.onload = ->
   code = req.responseText
   setSource code
-  ast = parser.parse code
-  demo = JSON.stringify ast, null, 2
-  setCompiled demo
+
+  ast = compiler.compile code

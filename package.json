@@ -31,7 +31,9 @@
   },
   "description": "Generated JavaScript from Cirru Grammar",
   "dependencies": {
-    "cirru-parser": "^0.10.1"
+    "cirru-parser": "^0.10.1",
+    "lodash": "^2.4.1",
+    "source-map": "^0.1.43"
   },
   "repository": {
     "type": "git",

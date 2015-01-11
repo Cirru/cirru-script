@@ -5,6 +5,7 @@ project = 'Cirru/script'
 dev = yes
 libraries = [
   'cirru-parser'
+  'source-map'
 ]
 
 gulp.task 'folder', (cb) ->
