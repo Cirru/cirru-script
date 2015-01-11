@@ -16,4 +16,5 @@ req.onload = ->
   code = req.responseText
   setSource code
 
-  ast = compiler.compile code
+  res = compiler.compile code
+  setCompiled res.js
