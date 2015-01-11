@@ -16,30 +16,71 @@ transformExpr = (expr) ->
   if _.isArray expr
     if expr.length is 0 then throw  new Error 'got empty expression'
     head = expr[0]
-    handler = builtins[head.text]
-    handler or= builtins['evaluate']
-    handler expr
-  else # token
-    text = expr.text
     switch
-      when text is '#true'
-        type: 'segment', name: 'true', x: expr.x, y: expr.y
-      when text is '#false'
-        type: 'segment', name: 'false', x: expr.x, y: expr.y
-      when text is '#undefined'
-        type: 'segment', name: 'undefined', x: expr.x, y: expr.y
-      when text is '#null'
-        type: 'segment', name: 'null', x: expr.x, y: expr.y
-      when text[0] is ':'
-        stringValue = "'#{(JSON.stringify text[1..])[1...-1]}'"
-        type: 'segment', name: stringValue, x: expr.x, y: expr.y
-      when text[0].match(regNumber)?
-        numberValue = parseFloat(text).toString()
-        type: 'segment', name: numberValue, x: expr.x, y: expr.y
-      when text[0].match(regVariable)?
-        type: 'segment', name: text, x: expr.x, y: expr.y
+      when head.text in ['+', '-', '*', '/']
+        transformInfixMath expr
+      when head.text in ['>', '==', '<', '&&', '||', '!']
+        transformInfixOperator expr
       else
-        throw new Error "can recognize ==#{expr.text}=="
+        handler = builtins[head.text]
+        handler or= builtins['evaluate']
+        handler expr
+  else # token
+    transformToken expr
+
+transformToken = (expr) ->
+  text = expr.text
+  switch
+    when text is '#true'
+      type: 'segment', name: 'true', x: expr.x, y: expr.y
+    when text is '#false'
+      type: 'segment', name: 'false', x: expr.x, y: expr.y
+    when text is '#undefined'
+      type: 'segment', name: 'undefined', x: expr.x, y: expr.y
+    when text is '#null'
+      type: 'segment', name: 'null', x: expr.x, y: expr.y
+    when text[0] is ':'
+      stringValue = "'#{(JSON.stringify text[1..])[1...-1]}'"
+      type: 'segment', name: stringValue, x: expr.x, y: expr.y
+    when text[0].match(regNumber)?
+      numberValue = parseFloat(text).toString()
+      type: 'segment', name: numberValue, x: expr.x, y: expr.y
+    when text[0].match(regVariable)?
+      type: 'segment', name: text, x: expr.x, y: expr.y
+    else
+      throw new Error "can recognize ==#{expr.text}=="
+
+transformInfixOperator = (expr) ->
+  unless expr.length is 3
+    throw new Error "infix operators accepts 2 arguments"
+  head = expr[0]
+  first = expr[1]
+  second = expr[2]
+  [
+    transformExpr first
+  ,
+    space
+  ,
+    type: 'segment', name: head.text, x: head.x, y: head.y
+  ,
+    space
+  ,
+    transformExpr second
+  ]
+
+transformInfixMath = (expr) ->
+  head = expr[0]
+  tail = expr[1..]
+  fold = (xs, list) ->
+    if list.length is 0 then return xs
+    if xs.length > 0
+      xs = xs.concat space
+      xs = xs.concat type: 'segment', name: head.text, x: head.x, y: head.y
+      xs = xs.concat space
+    first = list[0]
+    newXs = xs.concat first
+    fold newXs, list[1..]
+  fold [], (tail.map transformExpr)
 
 transformList = (list) ->
   list.map transformExpr
@@ -154,5 +195,72 @@ builtins =
     reg = expr[1]
     unless _.isObject reg
       throw new Error '-- regexp only accepts token'
-    type: 'segment', name: reg.text, x: reg.x, y: reg.y
+    type: 'segment', name: "/#{reg.text}/", x: reg.x, y: reg.y
+
+  'new': (expr) ->
+    head = expr[0]
+    construct = expr[1]
+    options = expr[2..]
+    before = [
+      type: 'segment', name: 'new', x: head.x, y: head.y
+    ,
+      space
+    ,
+      type: 'segment', name: construct.text, x: head.x, y: head.y
+    ,
+      type: 'segment', name: '(', x: head.x, y: head.y
+    ,
+      decorateArguments (transformList options)
+    ,
+      type: 'segment', name: ')', x: head.x, y: head.y
+    ]
+
+  '.': (expr) ->
+    head = expr[0]
+    dict = expr[1]
+    key = expr[2]
+    [
+      transformExpr dict
+    ,
+      type: 'segment', name: '[', x: head.x, y: head.y
+    ,
+      transformExpr key
+    ,
+      type: 'segment', name: ']', x: head.x, y: head.y
+    ]
+
+  '?': (expr) ->
+    head = expr[0]
+    value = transformExpr expr[1]
+    [
+      type: 'segment', name: 'typeof ', x: head.x, y: head.y
+      value
+      type: 'segment', name: ' !== "undefined" && ', x: head.x, y: head.y
+      value
+      type: 'segment', name: ' !== null', x: head.x, y: head.y
+    ]
+
+  '?=': (expr) ->
+    head = expr[0]
+    variable = expr[1]
+    value = expr[2]
+    unless variable.text.match(regVariable)?
+      throw new Error "path can not be assgined ==#{variable.text}=="
+    [
+      type: 'segment', name: 'if (', x: head.x, y: head.y
+    ,
+      type: 'segment', name: variable.text, x: variable.x, y: variable.y
+    ,
+      type: 'segment', name: ' == null) {', x: head.x, y: head.y
+      indent
+      newline
+      type: 'segment', name: variable.text, x: variable.x, y: variable.y
+      space
+      type: 'segment', name: '=', x: head.x, y: head.y
+      space
+      transformExpr value
+      unindent
+      newline
+      type: 'segment', name: '}', x: head.x, y: head.y
+    ]
 
