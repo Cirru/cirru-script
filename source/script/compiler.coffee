@@ -19,8 +19,8 @@ assemble = (tree) ->
     if op.type is 'segment'
       js += op.name
       bundleMap.addMapping
-        generated: {column: state.y, line: state.x}
-        original: {column: op.x, line: op.y}
+        generated: {column: (state.x - 1), line: state.y}
+        original: {column: (op.x - 1), line: op.y}
         source: 'demo'
         name: op.name
       state.x += op.name.length
@@ -31,6 +31,7 @@ assemble = (tree) ->
       when 'unindent' then state.indent -= 2
       when 'space' then js += ' '; state.x += 1
       when 'comma' then js += ','; state.x += 1
+      when 'semicolon' then js += ';'; state.x += 1
       when 'newline'
         js += '\n'
         state.y += 1

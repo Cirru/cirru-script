@@ -6,6 +6,8 @@ regNumber = /^[+-\.]?[\d\.]+/
 
 space = type: 'control', name: 'space'
 newline = type: 'control', name: 'newline'
+comma = type: 'control', name: 'comma'
+semicolon = type: 'control', name: 'semicolon'
 indent = type: 'control', name: 'indent'
 unindent = type: 'control', name: 'unindent'
 
@@ -31,13 +33,13 @@ transformExpr = (expr) ->
 transformToken = (expr) ->
   text = expr.text
   switch
-    when text is '#true'
+    when text is 'true'
       type: 'segment', name: 'true', x: expr.x, y: expr.y
-    when text is '#false'
+    when text is 'false'
       type: 'segment', name: 'false', x: expr.x, y: expr.y
-    when text is '#undefined'
+    when text is 'undefined'
       type: 'segment', name: 'undefined', x: expr.x, y: expr.y
-    when text is '#null'
+    when text is 'null'
       type: 'segment', name: 'null', x: expr.x, y: expr.y
     when text[0] is ':'
       stringValue = "'#{(JSON.stringify text[1..])[1...-1]}'"
@@ -88,11 +90,10 @@ transformList = (list) ->
 decorateStatements = (list) ->
   fold = (res, data) ->
     if data.length is 0 then return res
-    if res.length > 0
-      res.push type: 'control', name: 'newline'
-    head = data[0]
-    newRes = res.concat [head]
-    fold newRes, data[1..]
+    res = res.concat [data[0]]
+    res = res.concat semicolon
+    res.push type: 'control', name: 'newline'
+    fold res, data[1..]
   fold [], list
 
 decorateArguments = (list) ->
@@ -154,12 +155,13 @@ builtins =
     head = expr[0]
     pairs = expr[1..].map (pair) ->
       key = pair[0]
-      unless _.isObject(key) then throw new Error
+      unless _.isObject(key) and key.text[0] is ':'
+        throw new Error "a key starts with :"
       value = pair[1]
       [
         newline
       ,
-        type: "segment", name: key.text, x: head.x, y: head.y
+        type: "segment", name: key.text[1..], x: key.x, y: key.y
       ,
         type: 'segment', name: ':', x: head.x, y: head.y
       ,
@@ -184,12 +186,40 @@ builtins =
     ]
 
   '--': (expr) ->
+    head = expr[0]
     content = expr[1]
     unless _.isObject content
       throw new Error '-- only supports text'
-    type: 'segment', name: "/* #{content.text} */", x: content.x, y: content.y
+    [
+      type: 'segment', name: '/* ', x: head.x, y: head.y
+    ,
+      type: 'segment', name: content.text, x: content.x, y: content.y
+    ,
+      type: 'segment', name: ' */', x: head.x, y: head.y
+    ]
 
   '\\': (expr) ->
+    head = expr[0]
+    args = expr[1]
+    unless _.isArray args
+      throw new Error 'function arguments represents in an array'
+    body = expr[2...-1]
+    last = expr[expr.length-1]
+    [
+      type: 'segment', name: 'function(', x: head.x, y: head.y
+      decorateArguments (transformList args)
+      type: 'segment', name: ') {', x: head.x, y: head.y
+      indent
+      newline
+      decorateStatements (transformList body)
+      type: 'segment', name: 'return', x: head.x, y: head.y
+      space
+      transformExpr last
+      semicolon
+      unindent
+      newline
+      type: 'segment', name: '}', x: head.x, y: head.y
+    ]
 
   regexp: (expr) ->
     reg = expr[1]
@@ -206,7 +236,7 @@ builtins =
     ,
       space
     ,
-      type: 'segment', name: construct.text, x: head.x, y: head.y
+      type: 'segment', name: construct.text, x: construct.x, y: construct.y
     ,
       type: 'segment', name: '(', x: head.x, y: head.y
     ,
@@ -259,8 +289,17 @@ builtins =
       type: 'segment', name: '=', x: head.x, y: head.y
       space
       transformExpr value
+      semicolon
       unindent
       newline
       type: 'segment', name: '}', x: head.x, y: head.y
     ]
 
+  '++:': (expr) ->
+    head = expr[0]
+    expr[1..].map (x, index) ->
+      [
+        type: 'segment', name: (if index is 0 then '\'\'+ ' else ' + " " + ')
+        x: head.x, y: head.y
+        transformExpr x
+      ]
