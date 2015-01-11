@@ -1,0 +1,30 @@
+
+body {
+    margin: 0;
+    display: flex;
+    align-items: stretch;
+    flex-direction: row;
+    height: 100%;
+    position: absolute;
+    width: 100%;
+}
+
+textarea {
+    padding: 8px;
+    font-size: 14px;
+    font-family: Menlo;
+    line-height: 1.5em;
+}
+
+#source {
+    width: 50%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
+#compiled {
+    width: 50%;
+    height: 100%;
+    border: none;
+}
