@@ -1,46 +1,43 @@
 
 _ = require 'lodash'
 
+Env = require './env'
+
 regVariable = /(\w|\$)[\$\w\d]*(\.(\w|\$)[\$\w\d]*)*/
 regNumber = /^[+-\.]?[\d\.]+/
 
-space = type: 'control', name: 'space'
-newline = type: 'control', name: 'newline'
-comma = type: 'control', name: 'comma'
+space     = type: 'control', name: 'space'
+newline   = type: 'control', name: 'newline'
+comma     = type: 'control', name: 'comma'
 semicolon = type: 'control', name: 'semicolon'
-indent = type: 'control', name: 'indent'
-unindent = type: 'control', name: 'unindent'
+indent    = type: 'control', name: 'indent'
+unindent  = type: 'control', name: 'unindent'
 
 exports.resolve = (ast) ->
-  decorateStatements (transformList ast)
+  topEnv = new Env null
+  decorateStatements (transformList ast, topEnv)
 
-transformExpr = (expr) ->
+transformExpr = (expr, env) ->
   if _.isArray expr
     if expr.length is 0 then throw  new Error 'got empty expression'
     head = expr[0]
     switch
       when head.text in ['+', '-', '*', '/']
-        transformInfixMath expr
+        transformInfixMath expr, env
       when head.text in ['>', '==', '<', '&&', '||', '!']
-        transformInfixOperator expr
+        transformInfixOperator expr, env
       else
         handler = builtins[head.text]
         handler or= builtins['evaluate']
-        handler expr
+        handler expr, env
   else # token
-    transformToken expr
+    transformToken expr, env
 
-transformToken = (expr) ->
+transformToken = (expr, env) ->
   text = expr.text
   switch
-    when text is 'true'
-      type: 'segment', name: 'true', x: expr.x, y: expr.y
-    when text is 'false'
-      type: 'segment', name: 'false', x: expr.x, y: expr.y
-    when text is 'undefined'
-      type: 'segment', name: 'undefined', x: expr.x, y: expr.y
-    when text is 'null'
-      type: 'segment', name: 'null', x: expr.x, y: expr.y
+    when text in ['true', 'false', 'undefined', 'null', 'continute', 'break', 'debugger']
+      type: 'segment', name: text, x: expr.x, y: expr.y
     when text[0] is ':'
       stringValue = "'#{(JSON.stringify text[1..])[1...-1]}'"
       type: 'segment', name: stringValue, x: expr.x, y: expr.y
@@ -52,14 +49,14 @@ transformToken = (expr) ->
     else
       throw new Error "can recognize ==#{expr.text}=="
 
-transformInfixOperator = (expr) ->
+transformInfixOperator = (expr, env) ->
   unless expr.length is 3
     throw new Error "infix operators accepts 2 arguments"
   head = expr[0]
   first = expr[1]
   second = expr[2]
   [
-    transformExpr first
+    transformExpr first, env
   ,
     space
   ,
@@ -67,10 +64,10 @@ transformInfixOperator = (expr) ->
   ,
     space
   ,
-    transformExpr second
+    transformExpr second, env
   ]
 
-transformInfixMath = (expr) ->
+transformInfixMath = (expr, env) ->
   head = expr[0]
   tail = expr[1..]
   fold = (xs, list) ->
@@ -82,21 +79,22 @@ transformInfixMath = (expr) ->
     first = list[0]
     newXs = xs.concat first
     fold newXs, list[1..]
-  fold [], (tail.map transformExpr)
+  fold [], (tail.map (x) -> transformExpr x, env)
 
-transformList = (list) ->
-  list.map transformExpr
+transformList = (list, env) ->
+  list.map (expr) ->
+    transformExpr expr, env
 
-decorateStatements = (list) ->
+decorateStatements = (list, env) ->
   fold = (res, data) ->
     if data.length is 0 then return res
+    res.push type: 'control', name: 'newline'
     res = res.concat [data[0]]
     res = res.concat semicolon
-    res.push type: 'control', name: 'newline'
     fold res, data[1..]
   fold [], list
 
-decorateArguments = (list) ->
+decorateArguments = (list, env) ->
   fold = (res, data) ->
     if data.length is 0 then return res
     if res.length > 0
@@ -108,24 +106,20 @@ decorateArguments = (list) ->
   fold [], list
 
 builtins =
-  '=': (expr) ->
+  '=': (expr, env) ->
     head = expr[0]
     variable = expr[1]
     unless variable.text.match(regVariable)?
       throw new Error "path can not be assgined ==#{variable.text}=="
     [
       type: 'segment', name: variable.text, x: variable.x, y: variable.y
-    ,
       space
-    ,
       type: 'segment', name: '=', x: head.x, y: head.y
-    ,
       space
-    ,
-      transformExpr expr[2]
+      transformExpr expr[2], env
     ]
 
-  'evaluate': (expr) ->
+  'evaluate': (expr, env) ->
     head = expr[0]
     unless head.text.match(regVariable)
       throw new Error "can not evaluate #{head.text}"
@@ -134,24 +128,20 @@ builtins =
       type: 'segment', name: head.text, x: head.x, y: head.y
     ,
       type: 'segment', name: '(', x: head.x, y: head.y
-    ,
-      decorateArguments (transformList tail)
-    ,
+      decorateArguments (transformList tail, env), env
       type: 'segment', name: ')', x: head.x, y: head.y
     ]
 
-  'array': (expr) ->
+  'array': (expr, env) ->
     head = expr[0]
     tail = expr[1..]
     [
       type: 'segment', name: '[', x: head.x, y: head.y
-    ,
-      decorateArguments (transformList tail)
-    ,
+      decorateArguments (transformList tail, env), env
       type: 'segment', name: ']', x: head.x, y: head.y
     ]
 
-  'object': (expr) ->
+  'object': (expr, env) ->
     head = expr[0]
     pairs = expr[1..].map (pair) ->
       key = pair[0]
@@ -160,32 +150,23 @@ builtins =
       value = pair[1]
       [
         newline
-      ,
         type: "segment", name: key.text[1..], x: key.x, y: key.y
       ,
         type: 'segment', name: ':', x: head.x, y: head.y
-      ,
         space
-      ,
-        transformExpr value
-      ,
+        transformExpr value, env
         type: 'segment', name: ',', x: head.x, y: head.y
       ]
     [
       type: 'segment', name: '{', x: head.x, y: head.y
-    ,
       indent
-    ,
       pairs
-    ,
       unindent
-    ,
       newline
-    ,
       type: 'segment', name: '}', x: head.x, y: head.y
     ]
 
-  '--': (expr) ->
+  '--': (expr, env) ->
     head = expr[0]
     content = expr[1]
     unless _.isObject content
@@ -198,7 +179,7 @@ builtins =
       type: 'segment', name: ' */', x: head.x, y: head.y
     ]
 
-  '\\': (expr) ->
+  '\\': (expr, env) ->
     head = expr[0]
     args = expr[1]
     unless _.isArray args
@@ -207,61 +188,54 @@ builtins =
     last = expr[expr.length-1]
     [
       type: 'segment', name: 'function(', x: head.x, y: head.y
-      decorateArguments (transformList args)
+      decorateArguments (transformList args, env), env
       type: 'segment', name: ') {', x: head.x, y: head.y
       indent
+      decorateStatements (transformList body, env), env
       newline
-      decorateStatements (transformList body)
       type: 'segment', name: 'return', x: head.x, y: head.y
       space
-      transformExpr last
+      transformExpr last, env
       semicolon
       unindent
       newline
       type: 'segment', name: '}', x: head.x, y: head.y
     ]
 
-  regexp: (expr) ->
+  regexp: (expr, env) ->
     reg = expr[1]
     unless _.isObject reg
       throw new Error '-- regexp only accepts token'
     type: 'segment', name: "/#{reg.text}/", x: reg.x, y: reg.y
 
-  'new': (expr) ->
+  'new': (expr, env) ->
     head = expr[0]
     construct = expr[1]
     options = expr[2..]
     before = [
       type: 'segment', name: 'new', x: head.x, y: head.y
-    ,
       space
-    ,
       type: 'segment', name: construct.text, x: construct.x, y: construct.y
     ,
       type: 'segment', name: '(', x: head.x, y: head.y
-    ,
-      decorateArguments (transformList options)
-    ,
+      decorateArguments (transformList options, env), env
       type: 'segment', name: ')', x: head.x, y: head.y
     ]
 
-  '.': (expr) ->
+  '.': (expr, env) ->
     head = expr[0]
     dict = expr[1]
     key = expr[2]
     [
-      transformExpr dict
-    ,
+      transformExpr dict, env
       type: 'segment', name: '[', x: head.x, y: head.y
-    ,
-      transformExpr key
-    ,
+      transformExpr key, env
       type: 'segment', name: ']', x: head.x, y: head.y
     ]
 
-  '?': (expr) ->
+  '?': (expr, env) ->
     head = expr[0]
-    value = transformExpr expr[1]
+    value = transformExpr expr[1], env
     [
       type: 'segment', name: 'typeof ', x: head.x, y: head.y
       value
@@ -270,7 +244,7 @@ builtins =
       type: 'segment', name: ' !== null', x: head.x, y: head.y
     ]
 
-  '?=': (expr) ->
+  '?=': (expr, env) ->
     head = expr[0]
     variable = expr[1]
     value = expr[2]
@@ -288,18 +262,44 @@ builtins =
       space
       type: 'segment', name: '=', x: head.x, y: head.y
       space
-      transformExpr value
+      transformExpr value, env
       semicolon
       unindent
       newline
       type: 'segment', name: '}', x: head.x, y: head.y
     ]
 
-  '++:': (expr) ->
+  '++:': (expr, env) ->
     head = expr[0]
     expr[1..].map (x, index) ->
       [
         type: 'segment', name: (if index is 0 then '\'\'+ ' else ' + " " + ')
         x: head.x, y: head.y
-        transformExpr x
+        transformExpr x, env
       ]
+
+  'while': (expr, env) ->
+    head = expr[0]
+    cond = expr[1]
+    body = expr[2..]
+    [
+      type: 'segment', name: 'while (', x: head.x, y: head.y
+      transformExpr cond, env
+      type: 'segment', name: ') {', x: head.x, y: head.y
+      indent
+      decorateStatements (transformList body, env), env
+      unindent
+      newline
+      type: 'segment', name: '}', x: head.x, y: head.y
+    ]
+
+  'for': (expr, env) ->
+    head = expr[0]
+    cond = expr[1]
+    body = expr[2..]
+    [
+      type: 'segment', name: '_ref = ', x: head.x, y: head.y
+      transformExpr cond, env
+      semicolon
+      newline
+    ]
