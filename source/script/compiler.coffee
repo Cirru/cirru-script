@@ -7,8 +7,14 @@ grammar = require './grammar'
 
 {SourceMapGenerator} = sourceMap
 
-assemble = (tree) ->
-  operations = (_.flatten tree).filter _.isObject
+assemble = (operations) ->
+  operations = (_.flatten operations)
+  operations = operations.filter _.isObject
+  operations = operations.map (x) ->
+    if x.type is 'declaration'
+      x.getSegments()
+    else x
+  operations = (_.flatten operations)
   bundleMap = new SourceMapGenerator file: 'demo'
   js = ''
   state =
@@ -25,8 +31,6 @@ assemble = (tree) ->
         name: op.name
       state.x += op.name.length
       continue
-    if op.type is 'declaration'
-      console.log 'x'
     # so, it's supposed to be control
     switch op.name
       when 'indent' then state.indent += 2
@@ -36,6 +40,7 @@ assemble = (tree) ->
       when 'semicolon' then js += ';'; state.x += 1
       when '(' then js += '('; state.x += 1
       when ')' then js += ')'; state.x += 1
+      when 'var' then js += 'var'; state.x += 3
       when 'newline'
         js += '\n'
         state.y += 1

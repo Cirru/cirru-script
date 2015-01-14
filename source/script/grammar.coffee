@@ -22,7 +22,12 @@ exports.resolve = (ast) ->
     position: 'statement'
     wantReturn: false
   pos = 0
-  transformList ast, topEnv, topState
+  res = transformList ast, topEnv, topState
+  [
+    topEnv
+    res
+    newline
+  ]
 
 transformExpr = (expr, env, state, pos) ->
   if _.isArray expr
@@ -214,7 +219,7 @@ builtins =
       S ' */', head
     ]
 
-  '\\': (expr, env, state, pos) ->
+  '\\': (expr, env, state) ->
     head = expr[0]
     args = expr[1]
     insideEnv = new Env env
@@ -224,6 +229,8 @@ builtins =
     insideState =
       position: 'statement'
       wantReturn: yes
+    _.flatten(args).map (x) ->
+      insideEnv.markArgs x.text
     unless _.isArray args
       throw new Error 'function arguments represents in an array'
     body = expr[2...-1]
@@ -233,6 +240,7 @@ builtins =
       transformList args, env, argsState
       S ') {', head
       indent
+      insideEnv
       transformList body, insideEnv, insideState
       unindent
       newline
@@ -276,11 +284,11 @@ builtins =
       wantReturn: no
     value = transformExpr expr[1], env, insideState
     [
-      S 'typeof ', head
+      S '(typeof ', head
       value
-      S ' !== \'undefined\' && ', head
+      S ' !== \'undefined\') && (', head
       value
-      S ' !== null', head
+      S ' !== null)', head
     ]
 
   '?=': (expr, env, state) ->
@@ -359,8 +367,8 @@ builtins =
     variable = cond[0]
     key = cond[1]
     value = cond[2]
-    env.registerVar key
-    env.registerVar value
+    env.registerVar (S key.text, key)
+    env.registerVar (S value.text, value)
     [
       refVar
       S ' = ', head

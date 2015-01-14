@@ -3,6 +3,7 @@ module.exports = class Env
   constructor: (parent) ->
     @parent = parent
     @varables = []
+    @args = []
     if @parent?
       @level = @parent.level + 1
       @lenN = @parent.lenN + 1
@@ -39,3 +40,27 @@ module.exports = class Env
     exists = @checkVar(x)
     unless exists
       @varables.push x
+
+  markArgs: (name) ->
+    @args.push name
+
+  getSegments: ->
+    console.log @varables, @args
+    varables = @varables.filter (x) =>
+      not (x.name in @args)
+    if varables.length is 0
+      return []
+    collections = [
+      type: 'control', name: 'newline'
+    ,
+      type: 'control', name: 'var'
+    ,
+      type: 'control', name: 'space'
+    ]
+    for x, index in varables
+      if index > 0
+        collections.push type: 'control', name: 'comma'
+        collections.push type: 'control', name: 'space'
+      collections.push x
+    collections.push type: 'control', name: 'semicolon'
+    collections
