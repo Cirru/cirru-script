@@ -12,6 +12,8 @@ module.exports = class Env
       @lenN = 0
       @refN = 0
 
+  type: 'declaration'
+
   makeLenN: (node) ->
     x = type: 'segment', name: "_len#{@lenN}", x: node.x, y: node.y
     @lenN += 1

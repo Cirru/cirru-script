@@ -5,7 +5,7 @@
 = b :string
 = c true
 = d undefined
-= e $ regexp ^hello\sworld$
+= e $ /^hello\sworld$
 
 -- "test values"
 

@@ -8,7 +8,7 @@ grammar = require './grammar'
 {SourceMapGenerator} = sourceMap
 
 assemble = (tree) ->
-  operations = _.flatten tree
+  operations = (_.flatten tree).filter _.isObject
   bundleMap = new SourceMapGenerator file: 'demo'
   js = ''
   state =

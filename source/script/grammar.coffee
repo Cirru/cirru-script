@@ -2,6 +2,7 @@
 _ = require 'lodash'
 
 Env = require './env'
+State = require './state'
 
 regVariable = /(\w|\$)[\$\w\d]*(\.(\w|\$)[\$\w\d]*)*/
 regNumber = /^[+-\.]?[\d\.]+/
@@ -13,135 +14,119 @@ semicolon = type: 'control', name: 'semicolon'
 indent    = type: 'control', name: 'indent'
 unindent  = type: 'control', name: 'unindent'
 
+S = (code, target) ->
+  type: 'segment', name: S, x: target.x, y: target.y
+
 exports.resolve = (ast) ->
   topEnv = new Env null
-  decorateStatements (transformList ast, topEnv)
+  topState = new State
+  pos = 0
+  transformList ast, topEnv, topState, pos
 
-transformExpr = (expr, env) ->
+transformExpr = (expr, env, state, pos) ->
   if _.isArray expr
     if expr.length is 0 then throw  new Error 'got empty expression'
     head = expr[0]
-    switch
+    res = switch
       when head.text in ['+', '-', '*', '/']
-        transformInfixMath expr, env
+        transformInfixMath expr, env, state, pos
       when head.text in ['>', '==', '<', '&&', '||', '!']
-        transformInfixOperator expr, env
+        transformInfixOperator expr, env, state, pos
       else
         handler = builtins[head.text]
         handler or= builtins['evaluate']
-        handler expr, env
+        handler expr, env, state, pos
+    res
   else # token
-    transformToken expr, env
+    transformToken expr, env, state, pos
 
-transformToken = (expr, env) ->
+transformToken = (expr, env, state, pos) ->
   text = expr.text
   switch
     when text in ['true', 'false', 'undefined', 'null', 'continute', 'break', 'debugger']
-      type: 'segment', name: text, x: expr.x, y: expr.y
+      S text, expr
     when text[0] is ':'
       stringValue = "'#{(JSON.stringify text[1..])[1...-1]}'"
-      type: 'segment', name: stringValue, x: expr.x, y: expr.y
+      S stringValue, expr
+    when text[0] is '/'
+      S "/#{text[1..]}/", expr
     when text[0].match(regNumber)?
       numberValue = parseFloat(text).toString()
-      type: 'segment', name: numberValue, x: expr.x, y: expr.y
+      S numberValue, expr
     when text[0].match(regVariable)?
-      type: 'segment', name: text, x: expr.x, y: expr.y
+      S text, expr
     else
       throw new Error "can recognize ==#{expr.text}=="
 
-transformInfixOperator = (expr, env) ->
+transformInfixOperator = (expr, env, state, pos) ->
   unless expr.length is 3
     throw new Error "infix operators accepts 2 arguments"
   head = expr[0]
   first = expr[1]
   second = expr[2]
   [
-    transformExpr first, env
-  ,
+    transformExpr first, env, state, pos
     space
-  ,
-    type: 'segment', name: head.text, x: head.x, y: head.y
-  ,
-    space
-  ,
+    S head.text, head
     transformExpr second, env
   ]
 
-transformInfixMath = (expr, env) ->
+transformInfixMath = (expr, env, state, pos) ->
   head = expr[0]
   tail = expr[1..]
   fold = (xs, list) ->
     if list.length is 0 then return xs
     if xs.length > 0
       xs = xs.concat space
-      xs = xs.concat type: 'segment', name: head.text, x: head.x, y: head.y
+      xs = xs.concat (S head.text, head)
       xs = xs.concat space
     first = list[0]
     newXs = xs.concat first
     fold newXs, list[1..]
-  fold [], (tail.map (x) -> transformExpr x, env)
+  fold [], (tail.map (x, pos) -> transformExpr x, env, state, pos)
 
-transformList = (list, env) ->
-  list.map (expr) ->
-    transformExpr expr, env
-
-decorateStatements = (list, env) ->
-  fold = (res, data) ->
-    if data.length is 0 then return res
-    res.push type: 'control', name: 'newline'
-    res = res.concat [data[0]]
-    res = res.concat semicolon
-    fold res, data[1..]
-  fold [], list
-
-decorateArguments = (list, env) ->
-  fold = (res, data) ->
-    if data.length is 0 then return res
-    if res.length > 0
-      res.push type: 'control', name: 'comma'
-      res.push type: 'control', name: 'space'
-    head = data[0]
-    newRes = res.concat [head]
-    fold newRes, data[1..]
-  fold [], list
+transformList = (list, env, state, pos) ->
+  list.map (expr, pos) ->
+    transformExpr expr, env, state, pos
 
 builtins =
-  '=': (expr, env) ->
+  '=': (expr, env, state, pos) ->
     head = expr[0]
     variable = expr[1]
     unless variable.text.match(regVariable)?
       throw new Error "path can not be assgined ==#{variable.text}=="
+    segmentVar = S variable.text, variable
+    env.registerVar segmentVar
     [
-      type: 'segment', name: variable.text, x: variable.x, y: variable.y
+      segmentVar
       space
-      type: 'segment', name: '=', x: head.x, y: head.y
+      S '=', head
       space
-      transformExpr expr[2], env
+      transformExpr expr[2], env, state, pos
     ]
 
-  'evaluate': (expr, env) ->
+  'evaluate': (expr, env, state, pos) ->
     head = expr[0]
     unless head.text.match(regVariable)
       throw new Error "can not evaluate #{head.text}"
     tail = expr[1..]
     [
-      type: 'segment', name: head.text, x: head.x, y: head.y
-    ,
-      type: 'segment', name: '(', x: head.x, y: head.y
-      decorateArguments (transformList tail, env), env
-      type: 'segment', name: ')', x: head.x, y: head.y
+      S head.text, head
+      S '(', head
+      transformList tail, env, state, pos
+      S ')', head
     ]
 
-  'array': (expr, env) ->
+  'array': (expr, env, state, pos) ->
     head = expr[0]
     tail = expr[1..]
     [
-      type: 'segment', name: '[', x: head.x, y: head.y
-      decorateArguments (transformList tail, env), env
-      type: 'segment', name: ']', x: head.x, y: head.y
+      S '[', head
+      transformList tail, env, state, pos
+      S ']', head
     ]
 
-  'object': (expr, env) ->
+  'object': (expr, env, state, pos) ->
     head = expr[0]
     pairs = expr[1..].map (pair) ->
       key = pair[0]
@@ -150,36 +135,33 @@ builtins =
       value = pair[1]
       [
         newline
-        type: "segment", name: key.text[1..], x: key.x, y: key.y
-      ,
-        type: 'segment', name: ':', x: head.x, y: head.y
+        S key.text[1..], key
+        S ':', head
         space
-        transformExpr value, env
-        type: 'segment', name: ',', x: head.x, y: head.y
+        transformExpr value, env, state, pos
+        S ',', head
       ]
     [
-      type: 'segment', name: '{', x: head.x, y: head.y
+      S '{', head
       indent
       pairs
       unindent
       newline
-      type: 'segment', name: '}', x: head.x, y: head.y
+      S '}', head
     ]
 
-  '--': (expr, env) ->
+  '--': (expr, env, state, pos) ->
     head = expr[0]
     content = expr[1]
     unless _.isObject content
       throw new Error '-- only supports text'
     [
-      type: 'segment', name: '/* ', x: head.x, y: head.y
-    ,
-      type: 'segment', name: content.text, x: content.x, y: content.y
-    ,
-      type: 'segment', name: ' */', x: head.x, y: head.y
+      S '/* ', head
+      S content.text, content
+      S ' */', head
     ]
 
-  '\\': (expr, env) ->
+  '\\': (expr, env, state, pos) ->
     head = expr[0]
     args = expr[1]
     unless _.isArray args
@@ -187,119 +169,145 @@ builtins =
     body = expr[2...-1]
     last = expr[expr.length-1]
     [
-      type: 'segment', name: 'function(', x: head.x, y: head.y
-      decorateArguments (transformList args, env), env
-      type: 'segment', name: ') {', x: head.x, y: head.y
+      S 'function(', head
+      transformList args, env, state, pos
+      S ') {', head
       indent
-      decorateStatements (transformList body, env), env
+      transformList body, env, state, pos
       newline
-      type: 'segment', name: 'return', x: head.x, y: head.y
+      S 'return', head
       space
-      transformExpr last, env
+      transformExpr last, env, state, pos
       semicolon
       unindent
       newline
-      type: 'segment', name: '}', x: head.x, y: head.y
+      S '}', head
     ]
 
-  regexp: (expr, env) ->
-    reg = expr[1]
-    unless _.isObject reg
-      throw new Error '-- regexp only accepts token'
-    type: 'segment', name: "/#{reg.text}/", x: reg.x, y: reg.y
-
-  'new': (expr, env) ->
+  'new': (expr, env, state, pos) ->
     head = expr[0]
     construct = expr[1]
     options = expr[2..]
     before = [
-      type: 'segment', name: 'new', x: head.x, y: head.y
+      S 'new', head
       space
-      type: 'segment', name: construct.text, x: construct.x, y: construct.y
-    ,
-      type: 'segment', name: '(', x: head.x, y: head.y
-      decorateArguments (transformList options, env), env
-      type: 'segment', name: ')', x: head.x, y: head.y
+      S construct.text, construct
+      S '(', head
+      transformList options, env, state, pos
+      S ')', head
     ]
 
-  '.': (expr, env) ->
+  '.': (expr, env, state, pos) ->
     head = expr[0]
     dict = expr[1]
     key = expr[2]
     [
-      transformExpr dict, env
-      type: 'segment', name: '[', x: head.x, y: head.y
-      transformExpr key, env
-      type: 'segment', name: ']', x: head.x, y: head.y
+      transformExpr dict, env, state, pos
+      S '[', head
+      transformExpr key, env, state, pos
+      S ']', head
     ]
 
-  '?': (expr, env) ->
+  '?': (expr, env, state, pos) ->
     head = expr[0]
-    value = transformExpr expr[1], env
+    value = transformExpr expr[1], env, state, pos
     [
-      type: 'segment', name: 'typeof ', x: head.x, y: head.y
+      S 'typeof ', head
       value
-      type: 'segment', name: ' !== "undefined" && ', x: head.x, y: head.y
+      S ' !== "undefined" && ', head
       value
-      type: 'segment', name: ' !== null', x: head.x, y: head.y
+      S ' !== null', head
     ]
 
-  '?=': (expr, env) ->
+  '?=': (expr, env, state, pos) ->
     head = expr[0]
     variable = expr[1]
     value = expr[2]
     unless variable.text.match(regVariable)?
       throw new Error "path can not be assgined ==#{variable.text}=="
     [
-      type: 'segment', name: 'if (', x: head.x, y: head.y
-    ,
-      type: 'segment', name: variable.text, x: variable.x, y: variable.y
-    ,
-      type: 'segment', name: ' == null) {', x: head.x, y: head.y
+      S 'if (', head
+      S variable.text, variable
+      S ' == null) {', head.x
       indent
       newline
-      type: 'segment', name: variable.text, x: variable.x, y: variable.y
+      S variable.text, variable
       space
-      type: 'segment', name: '=', x: head.x, y: head.y
+      S '=', head
       space
-      transformExpr value, env
+      transformExpr value, env, state, pos
       semicolon
       unindent
       newline
-      type: 'segment', name: '}', x: head.x, y: head.y
+      S '}', head
     ]
 
-  '++:': (expr, env) ->
+  '++:': (expr, env, state, pos) ->
     head = expr[0]
     expr[1..].map (x, index) ->
       [
-        type: 'segment', name: (if index is 0 then '\'\'+ ' else ' + " " + ')
-        x: head.x, y: head.y
-        transformExpr x, env
+        S (if index is 0 then '\'\'+ ' else ' + " " + '), head
+        transformExpr x, env, state, pos
       ]
 
-  'while': (expr, env) ->
+  'while': (expr, env, state, pos) ->
     head = expr[0]
     cond = expr[1]
     body = expr[2..]
     [
-      type: 'segment', name: 'while (', x: head.x, y: head.y
-      transformExpr cond, env
-      type: 'segment', name: ') {', x: head.x, y: head.y
+      S 'while (', head
+      transformExpr cond, env, state, pos
+      S ') {', head
       indent
-      decorateStatements (transformList body, env), env
+      transformList body, env, state, pos
       unindent
       newline
-      type: 'segment', name: '}', x: head.x, y: head.y
+      S '}', head
     ]
 
-  'for': (expr, env) ->
+  'for': (expr, env, state, pos) ->
     head = expr[0]
     cond = expr[1]
     body = expr[2..]
+    refVar = env.makeRefN head
+    lenVar = env.makeLenN head
+    unless _.isArray(cond) and (cond.length is 3)
+      throw new Error 'cond should an array which leng is 3'
+    variable = cond[0]
+    key = cond[1]
+    value = cond[2]
+    env.registerVar key
+    env.registerVar value
     [
-      type: 'segment', name: '_ref = ', x: head.x, y: head.y
-      transformExpr cond, env
+      newline
+      refVar
+      S ' = ', head
+      transformExpr cond, env, state, pos
       semicolon
       newline
+      S 'for( ', head
+      S key.text, key
+      S ' = 0, ', head
+      S lenVar.text, lenVar
+      S ' = '
+      S variable.text, variable
+      S '.length; '
+      S key.text, key
+      S ' < ', head
+      S lenVar.text, lenVar
+      semicolon
+      space
+      S key.text, key
+      S '++) {', head
+      indent
+      newline
+      S value.text, value
+      S ' = ', head
+      S variable.text, value
+      S '[', head
+      S key.text, key
+      S ']', head
+      unindent
+      newline
+      S '}', head
     ]
