@@ -26,3 +26,5 @@ while (< x 10)
 
 for (list index item)
   console.log item index
+
+range a b

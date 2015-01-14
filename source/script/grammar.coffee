@@ -350,7 +350,7 @@ builtins =
       S '}', head
     ]
 
-  'for': (expr, env, state, pos) ->
+  'for': (expr, env, state) ->
     head = expr[0]
     cond = expr[1]
     body = expr[2..]
@@ -402,4 +402,40 @@ builtins =
       unindent
       newline
       S '}', head
+    ]
+
+  'range': (expr, env, state) ->
+    head = expr[0]
+    unless expr.length is 3
+      throw new Error 'range takes two arguments'
+    a = S expr[1].text, expr[1]
+    b = S expr[2].text, expr[2]
+    [
+      S '(function() {', head
+      indent
+      newline
+      S 'var _i, _results;', head
+      newline
+      S '_results = [];', head
+      newline
+      S 'for (var _i = ', head
+      a
+      S '; ', head
+      a
+      S ' <= ', head
+      b
+      S ' ? _i <= ', head
+      b
+      S ' : _i >= ', head
+      b
+      S '; ', head
+      a
+      S ' <= ', head
+      b
+      S ' ? _i++ : _i--){ _results.push(_i); }', head
+      newline
+      S 'return _results;', head
+      unindent
+      newline
+      S '})()', head
     ]
