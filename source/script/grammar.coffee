@@ -2,7 +2,6 @@
 _ = require 'lodash'
 
 Env = require './env'
-State = require './state'
 
 regVariable = /(\w|\$)[\$\w\d]*(\.(\w|\$)[\$\w\d]*)*/
 regNumber = /^[+-\.]?[\d\.]+/
@@ -15,32 +14,64 @@ indent    = type: 'control', name: 'indent'
 unindent  = type: 'control', name: 'unindent'
 
 S = (code, target) ->
-  type: 'segment', name: S, x: target.x, y: target.y
+  type: 'segment', name: code, x: target.x, y: target.y
 
 exports.resolve = (ast) ->
   topEnv = new Env null
-  topState = new State
+  topState =
+    position: 'statement'
+    wantReturn: false
   pos = 0
-  transformList ast, topEnv, topState, pos
+  transformList ast, topEnv, topState
 
 transformExpr = (expr, env, state, pos) ->
   if _.isArray expr
     if expr.length is 0 then throw  new Error 'got empty expression'
     head = expr[0]
+    insideState =
+      position: 'inline'
+      wantReturn: state.wantReturn
+      parentLength: state.parentLength
     res = switch
       when head.text in ['+', '-', '*', '/']
-        transformInfixMath expr, env, state, pos
+        transformInfixMath expr, env, insideState
       when head.text in ['>', '==', '<', '&&', '||', '!']
-        transformInfixOperator expr, env, state, pos
+        transformInfixOperator expr, env, insideState
       else
         handler = builtins[head.text]
         handler or= builtins['evaluate']
-        handler expr, env, state, pos
-    res
+        handler expr, env, insideState, pos
+    type = 'expr'
   else # token
-    transformToken expr, env, state, pos
+    res = transformToken expr
+    type = 'token'
+  hasBlock = expr[0]?.text in ['for', 'while', 'if', '?=', '\\']
+  if (state.position is 'inline') and (type is 'expr') and (not state.bracketFree)
+    res = [
+      type: 'control', name: '('
+      res
+      type: 'control', name: ')'
+    ]
+  if (state.position is 'inlineList') and (pos > 0)
+    res = [
+      comma
+      space
+      res
+    ]
+  if (state.position is 'statement')
+    res = [
+      newline
+      res
+      semicolon unless hasBlock
+    ]
+  if state.wantReturn and ((state.position + 1) is state.parentLength)
+    res = [
+      type: 'control', name: 'return '
+      res
+    ]
+  res
 
-transformToken = (expr, env, state, pos) ->
+transformToken = (expr) ->
   text = expr.text
   switch
     when text in ['true', 'false', 'undefined', 'null', 'continute', 'break', 'debugger']
@@ -58,17 +89,21 @@ transformToken = (expr, env, state, pos) ->
     else
       throw new Error "can recognize ==#{expr.text}=="
 
-transformInfixOperator = (expr, env, state, pos) ->
+transformInfixOperator = (expr, env, state) ->
   unless expr.length is 3
     throw new Error "infix operators accepts 2 arguments"
   head = expr[0]
   first = expr[1]
   second = expr[2]
+  insideState =
+    position: 'inline'
+    wantReturn: no
   [
-    transformExpr first, env, state, pos
+    transformExpr first, env, insideState
     space
     S head.text, head
-    transformExpr second, env
+    space
+    transformExpr second, env, insideState
   ]
 
 transformInfixMath = (expr, env, state, pos) ->
@@ -83,16 +118,24 @@ transformInfixMath = (expr, env, state, pos) ->
     first = list[0]
     newXs = xs.concat first
     fold newXs, list[1..]
-  fold [], (tail.map (x, pos) -> transformExpr x, env, state, pos)
+  insideState =
+    position: 'inline'
+    wantReturn: false
+  fold [], (tail.map (x) -> transformExpr x, env, insideState)
 
-transformList = (list, env, state, pos) ->
+transformList = (list, env, state) ->
+  state.length = list.length
   list.map (expr, pos) ->
     transformExpr expr, env, state, pos
 
 builtins =
-  '=': (expr, env, state, pos) ->
+  '=': (expr, env, state) ->
     head = expr[0]
     variable = expr[1]
+    insideState =
+      position: 'inline'
+      wantReturn: false
+      bracketFree: yes
     unless variable.text.match(regVariable)?
       throw new Error "path can not be assgined ==#{variable.text}=="
     segmentVar = S variable.text, variable
@@ -102,33 +145,43 @@ builtins =
       space
       S '=', head
       space
-      transformExpr expr[2], env, state, pos
+      transformExpr expr[2], env, insideState
     ]
 
-  'evaluate': (expr, env, state, pos) ->
+  'evaluate': (expr, env, state) ->
     head = expr[0]
+    insideState =
+      position: 'inline'
+      wantReturn: false
     unless head.text.match(regVariable)
       throw new Error "can not evaluate #{head.text}"
     tail = expr[1..]
     [
       S head.text, head
       S '(', head
-      transformList tail, env, state, pos
+      transformList tail, env, insideState
       S ')', head
     ]
 
-  'array': (expr, env, state, pos) ->
+  'array': (expr, env, state) ->
     head = expr[0]
     tail = expr[1..]
+    insideState =
+      position: 'inlineList'
+      wantReturn: false
     [
       S '[', head
-      transformList tail, env, state, pos
+      transformList tail, env, insideState
       S ']', head
     ]
 
-  'object': (expr, env, state, pos) ->
+  'object': (expr, env, state) ->
     head = expr[0]
-    pairs = expr[1..].map (pair) ->
+    body = expr[1..]
+    insideState =
+      position: 'inline'
+      wantReturn: false
+    pairs = body.map (pair, index) ->
       key = pair[0]
       unless _.isObject(key) and key.text[0] is ':'
         throw new Error "a key starts with :"
@@ -138,8 +191,8 @@ builtins =
         S key.text[1..], key
         S ':', head
         space
-        transformExpr value, env, state, pos
-        S ',', head
+        transformExpr value, env, insideState
+        S ',', head unless (index + 1) is body.length
       ]
     [
       S '{', head
@@ -150,7 +203,7 @@ builtins =
       S '}', head
     ]
 
-  '--': (expr, env, state, pos) ->
+  '--': (expr, env) ->
     head = expr[0]
     content = expr[1]
     unless _.isObject content
@@ -164,102 +217,126 @@ builtins =
   '\\': (expr, env, state, pos) ->
     head = expr[0]
     args = expr[1]
+    insideEnv = new Env env
+    argsState =
+      position: 'inlineList'
+      wantReturn: no
+    insideState =
+      position: 'statement'
+      wantReturn: yes
     unless _.isArray args
       throw new Error 'function arguments represents in an array'
     body = expr[2...-1]
     last = expr[expr.length-1]
     [
       S 'function(', head
-      transformList args, env, state, pos
+      transformList args, env, argsState
       S ') {', head
       indent
-      transformList body, env, state, pos
-      newline
-      S 'return', head
-      space
-      transformExpr last, env, state, pos
-      semicolon
+      transformList body, insideEnv, insideState
       unindent
       newline
       S '}', head
     ]
 
-  'new': (expr, env, state, pos) ->
+  'new': (expr, env, state) ->
     head = expr[0]
     construct = expr[1]
     options = expr[2..]
+    insideState =
+      position: 'inlineList'
+      wantReturn: no
     before = [
       S 'new', head
       space
       S construct.text, construct
       S '(', head
-      transformList options, env, state, pos
+      transformList options, env, insideState
       S ')', head
     ]
 
-  '.': (expr, env, state, pos) ->
+  '.': (expr, env, state) ->
     head = expr[0]
     dict = expr[1]
+    insideState =
+      position: 'inline'
+      wantReturn: no
     key = expr[2]
     [
-      transformExpr dict, env, state, pos
+      transformExpr dict, env, insideState
       S '[', head
-      transformExpr key, env, state, pos
+      transformExpr key, env, insideState
       S ']', head
     ]
 
-  '?': (expr, env, state, pos) ->
+  '?': (expr, env, state) ->
     head = expr[0]
-    value = transformExpr expr[1], env, state, pos
+    insideState =
+      position: 'inline'
+      wantReturn: no
+    value = transformExpr expr[1], env, insideState
     [
       S 'typeof ', head
       value
-      S ' !== "undefined" && ', head
+      S ' !== \'undefined\' && ', head
       value
       S ' !== null', head
     ]
 
-  '?=': (expr, env, state, pos) ->
+  '?=': (expr, env, state) ->
     head = expr[0]
     variable = expr[1]
     value = expr[2]
+    insideState =
+      position: 'inline'
+      wantReturn: no
     unless variable.text.match(regVariable)?
       throw new Error "path can not be assgined ==#{variable.text}=="
     [
       S 'if (', head
       S variable.text, variable
-      S ' == null) {', head.x
+      S ' == null) {', head
       indent
       newline
       S variable.text, variable
       space
       S '=', head
       space
-      transformExpr value, env, state, pos
+      transformExpr value, env, insideState
       semicolon
       unindent
       newline
       S '}', head
     ]
 
-  '++:': (expr, env, state, pos) ->
+  '++:': (expr, env, state) ->
     head = expr[0]
+    insideState =
+      position: 'inline'
+      wantReturn: no
     expr[1..].map (x, index) ->
       [
         S (if index is 0 then '\'\'+ ' else ' + " " + '), head
-        transformExpr x, env, state, pos
+        transformExpr x, env, insideState
       ]
 
   'while': (expr, env, state, pos) ->
     head = expr[0]
     cond = expr[1]
     body = expr[2..]
+    condState =
+      position: 'inline'
+      wantReturn: no
+      bracketFree: yes
+    insideState =
+      position: 'statement'
+      wantReturn: no
     [
       S 'while (', head
-      transformExpr cond, env, state, pos
+      transformExpr cond, env, condState
       S ') {', head
       indent
-      transformList body, env, state, pos
+      transformList body, env, insideState
       unindent
       newline
       S '}', head
@@ -271,6 +348,12 @@ builtins =
     body = expr[2..]
     refVar = env.makeRefN head
     lenVar = env.makeLenN head
+    condState =
+      position: 'inline'
+      wantReturn: no
+    insideState =
+      position: 'statement'
+      wantReturn: false
     unless _.isArray(cond) and (cond.length is 3)
       throw new Error 'cond should an array which leng is 3'
     variable = cond[0]
@@ -279,22 +362,21 @@ builtins =
     env.registerVar key
     env.registerVar value
     [
-      newline
       refVar
       S ' = ', head
-      transformExpr cond, env, state, pos
+      transformExpr variable, env, condState
       semicolon
       newline
-      S 'for( ', head
+      S 'for (', head
       S key.text, key
       S ' = 0, ', head
-      S lenVar.text, lenVar
-      S ' = '
+      lenVar
+      S ' = ', head
       S variable.text, variable
-      S '.length; '
+      S '.length; ', head
       S key.text, key
       S ' < ', head
-      S lenVar.text, lenVar
+      lenVar
       semicolon
       space
       S key.text, key
@@ -307,6 +389,8 @@ builtins =
       S '[', head
       S key.text, key
       S ']', head
+      semicolon
+      transformList body, env, insideState
       unindent
       newline
       S '}', head

@@ -24,5 +24,5 @@ while (< x 10)
   = x $ + x 1
   console.log x
 
-for (list item index)
+for (list index item)
   console.log item index

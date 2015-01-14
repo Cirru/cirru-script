@@ -25,6 +25,8 @@ assemble = (tree) ->
         name: op.name
       state.x += op.name.length
       continue
+    if op.type is 'declaration'
+      console.log 'x'
     # so, it's supposed to be control
     switch op.name
       when 'indent' then state.indent += 2
@@ -32,6 +34,8 @@ assemble = (tree) ->
       when 'space' then js += ' '; state.x += 1
       when 'comma' then js += ','; state.x += 1
       when 'semicolon' then js += ';'; state.x += 1
+      when '(' then js += '('; state.x += 1
+      when ')' then js += ')'; state.x += 1
       when 'newline'
         js += '\n'
         state.y += 1
