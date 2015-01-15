@@ -45,7 +45,7 @@ transformExpr = (expr, env, state, pos) ->
       else
         handler = builtins[head.text]
         handler or= builtins['evaluate']
-        handler expr, env, insideState, pos
+        handler expr, env, insideState, pos, state
     type = 'expr'
   else # token
     res = transformToken expr
@@ -156,8 +156,9 @@ builtins =
   'evaluate': (expr, env, state) ->
     head = expr[0]
     insideState =
-      position: 'inline'
+      position: 'inlineList'
       wantReturn: false
+      bracketFree: yes
     unless head.text.match(regVariable)
       throw new Error "can not evaluate #{head.text}"
     tail = expr[1..]
@@ -439,3 +440,51 @@ builtins =
       newline
       S '})()', head
     ]
+
+  'if': (expr, env, state, pos, outsideState) ->
+    head = expr[0]
+    cond = expr[1]
+    trueExpr = expr[2]
+    falseExpr = expr[3]
+    if outsideState.position is 'statement'
+      condState =
+        position: 'inline'
+        wantReturn: false
+        bracketFree: true
+      insideState =
+        position: 'inline'
+        bracketFree: true
+        wantReturn: state.wantReturn
+      [
+        S 'if (', head
+        transformExpr cond, env, condState
+        S ') {', head
+        indent
+        transformExpr trueExpr, env, insideState
+        unindent
+        newline
+        S '} else {', head
+        indent
+        if falseExpr?
+        then transformExpr falseExpr, env, insideState
+        unindent
+        newline
+        S '}', head
+      ]
+    else
+      condState =
+        position: 'inline'
+        wantReturn: false
+      [
+        transformExpr cond, env, condState
+        S '? ', head
+        transformExpr trueExpr, env, condState
+        S ' : ', head
+        if falseExpr?
+        then transformExpr falseExpr, env, condState
+        else S 'undefined', head
+      ]
+
+  'do': (expr, env, state) ->
+    state.position = 'statement'
+    transformList expr[1..], env, state
