@@ -50,7 +50,7 @@ transformExpr = (expr, env, state, pos) ->
   else # token
     res = transformToken expr
     type = 'token'
-  hasBlock = expr[0]?.text in ['for', 'while', 'if', '?=', '\\']
+  hasBlock = expr[0]?.text in ['for', 'while', 'if', '?=', '\\', 'switch', 'cond']
   if (state.position is 'inline') and (type is 'expr') and (not state.bracketFree)
     res = [
       type: 'control', name: '('
@@ -512,6 +512,78 @@ builtins =
       indent
       if falseExpr?
       then transformExpr falseExpr, env, errorState
+      unindent
+      newline
+      S '}', head
+    ]
+
+  'switch': (expr, env, state) ->
+    head = expr[0]
+    target = expr[1]
+    body = expr[2..]
+    condState =
+      position: 'inline'
+      wantReturn: false
+      bracketFree: true
+    insideState =
+      position: 'statement'
+      wantReturn: state.wantReturn
+    pairs = body.map (pair) ->
+      console.log pair
+      [
+        newline
+        if pair[0].text is 'else'
+        then S 'default', head
+        else [
+          S 'case ', head
+          transformExpr pair[0], env, condState
+        ]
+        S ':', head
+        indent
+        transformList pair[1..], env, insideState
+        unindent
+      ]
+    [
+      S 'switch (', head
+      transformExpr target, env, condState
+      S ') {', head
+      indent
+      pairs
+      unindent
+      newline
+      S '}', head
+    ]
+
+  'cond': (expr, env, state) ->
+    head = expr[0]
+    body = expr[1..]
+    condState =
+      position: 'inline'
+      wantReturn: false
+      bracketFree: true
+    insideState =
+      position: 'statement'
+      wantReturn: state.wantReturn
+    pairs = body.map (pair) ->
+      console.log pair
+      [
+        newline
+        if pair[0].text is 'else'
+        then S 'default', head
+        else [
+          S 'case !(', head
+          transformExpr pair[0], env, condState
+          S ')', head
+        ]
+        S ':', head
+        indent
+        transformList pair[1..], env, insideState
+        unindent
+      ]
+    [
+      S 'switch (false) {', head
+      indent
+      pairs
       unindent
       newline
       S '}', head
