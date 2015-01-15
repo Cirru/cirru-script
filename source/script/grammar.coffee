@@ -488,3 +488,31 @@ builtins =
   'do': (expr, env, state) ->
     state.position = 'statement'
     transformList expr[1..], env, state
+
+  'try': (expr, env, state) ->
+    head = expr[0]
+    trueExpr = expr[1]
+    error = expr[2]
+    falseExpr = expr[3]
+    errorState =
+      position: 'inline'
+      bracketFree: yes
+      wantReturn: false
+    [
+      S 'try {', head
+      indent
+      transformExpr trueExpr, env, errorState
+      unindent
+      newline
+      S '} catch (', head
+      if error?
+      then transformExpr error, env, errorState
+      else S '_error', head
+      S ') {', head
+      indent
+      if falseExpr?
+      then transformExpr falseExpr, env, errorState
+      unindent
+      newline
+      S '}', head
+    ]
