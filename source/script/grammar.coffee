@@ -2,6 +2,7 @@
 _ = require 'lodash'
 
 Env = require './env'
+alias = require './alias'
 
 regVariable = /(\w|\$)[\$\w\d]*(\.(\w|\$)[\$\w\d]*)*/
 regNumber = /^[+-\.]?[\d\.]+/
@@ -33,10 +34,12 @@ transformExpr = (expr, env, state, pos) ->
   if _.isArray expr
     if expr.length is 0 then throw  new Error 'got empty expression'
     head = expr[0]
+    alias.rewrite head
     insideState =
       position: 'inline'
       wantReturn: state.wantReturn
       parentLength: state.parentLength
+
     res = switch
       when head.text in ['+', '-', '*', '/']
         transformInfixMath expr, env, insideState
@@ -50,7 +53,7 @@ transformExpr = (expr, env, state, pos) ->
   else # token
     res = transformToken expr
     type = 'token'
-  hasBlock = expr[0]?.text in ['for', 'while', 'if', '?=', '\\', 'switch', 'cond']
+  hasBlock = expr[0]?.text in ['for', 'while', 'if', '?=', 'lambda', 'switch', 'cond']
   if (state.position is 'inline') and (type is 'expr') and (not state.bracketFree)
     res = [
       type: 'control', name: '('
@@ -63,16 +66,17 @@ transformExpr = (expr, env, state, pos) ->
       space
       res
     ]
+  if state.wantReturn and ((pos + 1) is state.parentLength)
+    unless res[0]?.name is 'return '
+      res = [
+        type: 'control', name: 'return'
+        res
+      ]
   if (state.position is 'statement')
     res = [
       newline
       res
       semicolon unless hasBlock
-    ]
-  if state.wantReturn and ((state.position + 1) is state.parentLength)
-    res = [
-      type: 'control', name: 'return '
-      res
     ]
   res
 
@@ -129,7 +133,7 @@ transformInfixMath = (expr, env, state, pos) ->
   fold [], (tail.map (x) -> transformExpr x, env, insideState)
 
 transformList = (list, env, state) ->
-  state.length = list.length
+  state.parentLength = list.length
   list.map (expr, pos) ->
     transformExpr expr, env, state, pos
 
@@ -220,7 +224,7 @@ builtins =
       S ' */', head
     ]
 
-  '\\': (expr, env, state) ->
+  'lambda': (expr, env, state) ->
     head = expr[0]
     args = expr[1]
     insideEnv = new Env env
@@ -230,18 +234,25 @@ builtins =
     insideState =
       position: 'statement'
       wantReturn: yes
-    _.flatten(args).map (x) ->
-      insideEnv.markArgs x.text
-    unless _.isArray args
-      throw new Error 'function arguments represents in an array'
-    body = expr[2...-1]
+    normalArgs = _.isArray args
+    if normalArgs
+      args.map (x) -> insideEnv.markArgs x.text
+    else
+      insideEnv.registerVar (S args.text, args)
+    body = expr[2..]
     last = expr[expr.length-1]
     [
       S 'function(', head
-      transformList args, env, argsState
+      if normalArgs then transformList args, env, argsState
       S ') {', head
       indent
       insideEnv
+      unless normalArgs then [
+        newline
+        S args.text, args
+        S ' = [].slice.call(arguments, 0)', head
+        semicolon
+      ]
       transformList body, insideEnv, insideState
       unindent
       newline
@@ -587,4 +598,28 @@ builtins =
       unindent
       newline
       S '}', head
+    ]
+
+  'throw': (expr, env, state) ->
+    head = expr[0]
+    body = expr[1]
+    insideState =
+      position: 'inline'
+      wantReturn: no
+      bracketFree: yes
+    [
+      S 'throw ', head
+      transformExpr body, env, insideState
+    ]
+
+  'return': (expr, env, state) ->
+    head = expr[0]
+    body = expr[1]
+    insideState =
+      position: 'inline'
+      wantReturn: no
+      bracketFree: yes
+    [
+      S 'return ', head
+      transformExpr body, env, insideState
     ]

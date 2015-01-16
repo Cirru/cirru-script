@@ -41,6 +41,7 @@ assemble = (operations) ->
       when '(' then js += '('; state.x += 1
       when ')' then js += ')'; state.x += 1
       when 'var' then js += 'var'; state.x += 3
+      when 'return' then js += 'return '; state.x += 7
       when 'newline'
         js += '\n'
         state.y += 1
