@@ -10,7 +10,7 @@ setCompiled = (code) ->
   compiled.value = code
 
 req = new XMLHttpRequest
-req.open 'GET', './cirru/lambda.cirru'
+req.open 'GET', './cirru/switch.cirru'
 req.send()
 req.onload = ->
   code = req.responseText

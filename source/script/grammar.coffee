@@ -138,7 +138,7 @@ transformList = (list, env, state) ->
     transformExpr expr, env, state, pos
 
 builtins =
-  '=': (expr, env, state) ->
+  'set': (expr, env, state) ->
     head = expr[0]
     variable = expr[1]
     insideState =
@@ -528,19 +528,19 @@ builtins =
       S '}', head
     ]
 
-  'switch': (expr, env, state) ->
+  'switch': (expr, env, state, pos, outsideState) ->
     head = expr[0]
     target = expr[1]
     body = expr[2..]
+    isInline = outsideState.position is 'inline'
     condState =
       position: 'inline'
       wantReturn: false
       bracketFree: true
     insideState =
       position: 'statement'
-      wantReturn: state.wantReturn
+      wantReturn: if isInline then yes else state.wantReturn
     pairs = body.map (pair) ->
-      console.log pair
       [
         newline
         if pair[0].text is 'else'
@@ -554,7 +554,7 @@ builtins =
         transformList pair[1..], env, insideState
         unindent
       ]
-    [
+    res = [
       S 'switch (', head
       transformExpr target, env, condState
       S ') {', head
@@ -564,17 +564,28 @@ builtins =
       newline
       S '}', head
     ]
+    return res unless isInline
+    [
+      S '(function() {', head
+      indent
+      newline
+      res
+      unindent
+      newline
+      S '})()', head
+    ]
 
-  'cond': (expr, env, state) ->
+  'cond': (expr, env, state, pos, outsideState) ->
     head = expr[0]
     body = expr[1..]
+    isInline = outsideState.position is 'inline'
     condState =
       position: 'inline'
       wantReturn: false
       bracketFree: true
     insideState =
       position: 'statement'
-      wantReturn: state.wantReturn
+      wantReturn: if isInline then yes else state.wantReturn
     pairs = body.map (pair) ->
       console.log pair
       [
@@ -591,13 +602,23 @@ builtins =
         transformList pair[1..], env, insideState
         unindent
       ]
-    [
+    res = [
       S 'switch (false) {', head
       indent
       pairs
       unindent
       newline
       S '}', head
+    ]
+    return res unless isInline
+    [
+      S '(function() {', head
+      indent
+      newline
+      res
+      unindent
+      newline
+      S '})()', head
     ]
 
   'throw': (expr, env, state) ->
