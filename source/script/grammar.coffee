@@ -644,3 +644,41 @@ builtins =
       S 'return ', head
       transformExpr body, env, insideState
     ]
+
+  'class': (expr, env, state) ->
+    head = expr[0]
+    name = expr[1]
+    body = expr[2..]
+    env.registerVar (S name.text, name)
+    nameState =
+      position: 'inline'
+      wantReturn: no
+      bracketFree: yes
+    pairs = body.map (pair) ->
+      [
+        newline
+        newline
+        S name.text, name
+        S '.prototype[', name
+        transformExpr pair[0], env, nameState
+        S '] = ', name
+        transformExpr pair[1], env, nameState
+        semicolon
+      ]
+    [
+      S name.text, name
+      S ' = (function() {', head
+      indent
+      newline
+      S 'function ', head
+      S name.text, name
+      S '() {}', head
+      pairs
+      newline
+      S 'return ', head
+      S name.text, head
+      semicolon
+      unindent
+      newline
+      S '})()', head
+    ]
