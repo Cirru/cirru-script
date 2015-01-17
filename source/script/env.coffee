@@ -37,6 +37,8 @@ module.exports = class Env
       false
 
   registerVar: (x) ->
+    unless x.name.match(/^[\$_\w][\$_\w\d]*$/)
+      return
     exists = @checkVar(x)
     unless exists
       @varables.push x
@@ -45,7 +47,6 @@ module.exports = class Env
     @args.push name
 
   getSegments: ->
-    console.log @varables, @args
     varables = @varables.filter (x) =>
       not (x.name in @args)
     if varables.length is 0

@@ -55,7 +55,9 @@ transformExpr = (expr, env, state, pos) ->
   else # token
     res = transformToken expr, env, state
     type = 'token'
-  hasBlock = expr[0]?.text in ['for', 'while', 'if', '?=', 'lambda', 'switch', 'cond']
+  hasBlock = expr[0]?.text in [
+    'for', 'while', 'if', '?=', 'lambda', 'switch', 'cond', 'try'
+  ]
   if (state.position is 'inline') and (type is 'expr') and (not state.bracketFree)
     res = [
       type: 'control', name: '('
@@ -69,11 +71,12 @@ transformExpr = (expr, env, state, pos) ->
       res
     ]
   if state.wantReturn and ((pos + 1) is state.parentLength)
-    unless res[0]?.name is 'return '
-      res = [
-        type: 'control', name: 'return'
-        res
-      ]
+    unless head?.text in ['if', 'switch', 'cond', 'try']
+      unless res[0]?.name is 'return '
+        res = [
+          type: 'control', name: 'return'
+          res
+        ]
   if (state.position is 'statement')
     res = [
       newline
@@ -84,7 +87,6 @@ transformExpr = (expr, env, state, pos) ->
 
 transformToken = (expr, env, state) ->
   text = expr.text
-  console.log 'token:', text
   if state.rewriteThis
     text = text.replace /^this\./, '_this.'
     text = text.replace /^\@/, '_this.'
@@ -155,15 +157,12 @@ builtins =
       wantReturn: false
       bracketFree: yes
       rewriteThis: state.rewriteThis
-    unless variable.text.match(regVariable)?
-      throw new Error "path can not be assgined ==#{variable.text}=="
-    segmentVar = S variable.text, variable
-    env.registerVar segmentVar
+    segmentVar = transformExpr variable, env, insideState
+    unless _.isArray variable
+      env.registerVar segmentVar
     [
       segmentVar
-      space
-      S '=', head
-      space
+      S ' = ', head
       transformExpr expr[2], env, insideState
     ]
 
@@ -209,7 +208,7 @@ builtins =
     insideState =
       position: 'inline'
       wantReturn: false
-      bracketFree: false
+      bracketFree: true
       rewriteThis: state.rewriteThis
     pairs = body.map (pair, index) ->
       key = pair[0]
@@ -244,7 +243,7 @@ builtins =
       S ' */', head
     ]
 
-  'lambda': (expr, env, state) ->
+  'lambda': (expr, env, state, pos, outsideState) ->
     head = expr[0]
     args = expr[1]
     insideEnv = new Env env
@@ -255,7 +254,7 @@ builtins =
       rewriteThis: state.rewriteThis
     insideState =
       position: 'statement'
-      wantReturn: yes
+      wantReturn: not outsideState.nameSegment?
       bracketFree: false
       rewriteThis: false
     normalArgs = _.isArray args
@@ -266,7 +265,10 @@ builtins =
     body = expr[2..]
     last = expr[expr.length-1]
     [
-      S 'function (', head
+      S 'function ', head
+      if outsideState.nameSegment?
+        outsideState.nameSegment
+      S '(', head
       if normalArgs then transformList args, env, argsState
       S ') {', head
       indent
@@ -415,7 +417,7 @@ builtins =
       rewriteThis: state.rewriteThis
     expr[1..].map (x, index) ->
       [
-        S (if index is 0 then '\'\'+ ' else ' + " " + '), head
+        S (if index is 0 then '\'\' + ' else ' + '), head
         transformExpr x, env, insideState
       ]
 
@@ -478,7 +480,7 @@ builtins =
       S ' = 0, ', head
       lenVar
       S ' = ', head
-      S variable.text, variable
+      refVar
       S '.length; ', head
       S key.text, key
       S ' < ', head
@@ -489,9 +491,9 @@ builtins =
       S '++) {', head
       indent
       newline
-      S value.text, value
+      transformExpr value, env, condState
       S ' = ', head
-      S variable.text, value
+      refVar
       S '[', head
       S key.text, key
       S ']', head
@@ -689,7 +691,6 @@ builtins =
       bracketFree: false
       rewriteThis: true
     pairs = body.map (pair) ->
-      console.log pair
       [
         newline
         if pair[0].text is 'else'
@@ -754,12 +755,24 @@ builtins =
     name = expr[1]
     body = expr[2..]
     env.registerVar (S name.text, name)
+    if _.isArray name
+      throw new Error 'class name accepts token'
     nameState =
       position: 'inline'
       wantReturn: no
       bracketFree: yes
       rewriteThis: false
+    construct = null
+    constructState =
+      position: 'inline'
+      wantReturn: no
+      bracketFree: yes
+      rewriteThis: false
+      nameSegment: S name.text, name
     pairs = body.map (pair) ->
+      if pair[0].text is ':constructor'
+        construct = pair[1]
+        return
       [
         newline
         newline
@@ -775,9 +788,14 @@ builtins =
       S ' = (function () {', head
       indent
       newline
-      S 'function ', head
-      S name.text, name
-      S '() {}', head
+      if construct?
+        transformExpr construct, env, constructState
+      else
+        [
+          S 'function ', head
+          S name.text, name
+          S '() {}', head
+        ]
       pairs
       newline
       S 'return ', head
@@ -799,4 +817,70 @@ builtins =
     [
       S '!', head
       transformExpr body, env, insideState
+    ]
+
+  'in': (expr, env, state) ->
+    head = expr[0]
+    body = expr[1..]
+    insideState =
+      position: 'inlineList'
+      wantReturn: false
+      bracketFree: false
+      rewriteThis: state.rewriteThis
+    [
+      S "[].indexOf.call(", head
+      transformList body, env, insideState
+      S ") >= 0", head
+    ]
+
+  'of': (expr, env, state) ->
+    head = expr[0]
+    cond = expr[1]
+    body = expr[2..]
+    unless _.isArray cond
+      throw new Error 'of accepts list of 3'
+    variable = cond[0]
+    key = cond[1]
+    value = cond[2]
+    if _.isArray key
+      throw new Error "key in 'of' syntax uses token"
+    if _.isArray value
+      throw new Error "value in 'of' syntax uses token"
+    condState =
+      position: 'inline'
+      wantReturn: false
+      bracketFree: false
+      rewriteThis: state.rewriteThis
+    insideState =
+      position: 'statement'
+      wantReturn: false
+      bracketFree: false
+      rewriteThis: state.rewriteThis
+    env.registerVar (S key.text, key)
+    env.registerVar (S value.text, value)
+    refVar = env.makeRefN head
+    [
+      refVar
+      S ' = ', head
+      transformExpr variable, env, condState
+      semicolon
+      newline
+      S 'for (', head
+      S key.text, key
+      S ' in ', head
+      refVar
+      S ') {', head
+      indent
+      newline
+      S value.text, value
+      S ' = ', head
+      refVar
+      S '[', head
+      S key.text, key
+      S ']', head
+      semicolon
+      transformList body, env, insideState
+      unindent
+      newline
+      S '}', head
     ]

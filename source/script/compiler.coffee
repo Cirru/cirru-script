@@ -2,12 +2,13 @@
 parser = require 'cirru-parser'
 sourceMap = require 'source-map'
 _ = require 'lodash'
+path = require 'path'
 
 grammar = require './grammar'
 
 {SourceMapGenerator} = sourceMap
 
-assemble = (operations) ->
+assemble = (operations, filename) ->
   operations = (_.flatten operations)
   operations = operations.filter _.isObject
   operations = operations.map (x) ->
@@ -15,7 +16,9 @@ assemble = (operations) ->
       x.getSegments()
     else x
   operations = (_.flatten operations)
-  bundleMap = new SourceMapGenerator file: 'demo'
+  bundleMap = new SourceMapGenerator
+    file: filename
+    sourceRoot: './'
   js = ''
   state =
     indent: 1
@@ -27,7 +30,7 @@ assemble = (operations) ->
       bundleMap.addMapping
         generated: {column: (state.x - 1), line: state.y}
         original: {column: (op.x - 1), line: op.y}
-        source: 'demo'
+        source: filename
         name: op.name
       state.x += op.name.length
       continue
@@ -52,12 +55,11 @@ assemble = (operations) ->
   js: js
   mapping: bundleMap.toJSON()
 
-exports.compile = (code, filename="unknown") ->
-
-  ast = parser.parse code, filename
+exports.compile = (code, options) ->
+  ast = parser.parse code, options.path
   segments = grammar.resolve ast
-  res = (assemble segments)
-  console.log res
+  res = assemble segments, options.relativePath
+  # console.log res
   res
 
 makeSpace = (level) ->

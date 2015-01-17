@@ -10,11 +10,14 @@ setCompiled = (code) ->
   compiled.value = code
 
 req = new XMLHttpRequest
-req.open 'GET', './cirru/class.cirru'
+# req.open 'GET', './cirru/for.cirru'
+req.open 'GET', 'http://repo/Memkits/pudica/source/utils/dispatcher.cirru'
 req.send()
 req.onload = ->
   code = req.responseText
   setSource code
 
-  res = compiler.compile code
+  res = compiler.compile code, {relativePath: 'demo'}
   setCompiled res.js
+  window.c = "#{res.js}\n//# sourceURL=demo.js"
+
