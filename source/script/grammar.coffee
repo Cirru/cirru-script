@@ -106,7 +106,7 @@ transformToken = (expr, env, state) ->
     when text.match(regVariable)?
       S text, expr
     else
-      throw new Error "can recognize ==#{expr.text}=="
+      throw new Error "does not recognize ==#{expr.text}=="
 
 transformInfixOperator = (expr, env, state) ->
   unless expr.length is 3

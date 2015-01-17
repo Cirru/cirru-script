@@ -150,7 +150,7 @@ gulp.task 'rsync', (cb) ->
     src: '.'
     recursive: true
     args: ['--verbose']
-    dest: "tiye:~/repo/#{project}"
+    dest: "tiye:~/repo/cirru/script"
     deleteAll: yes
     exclude: [
       'node_modules/'
