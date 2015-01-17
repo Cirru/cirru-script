@@ -54,7 +54,7 @@ Note: `relativePath` is required, otherwise `source-map` will throw errors.
 = b :string
 = c true
 = d undefined
-= e $ /^hello\sworld$
+= e /^hello\sworld$
 ```
 
 Note: Cirru adopts [Polish notation][PN] in which all operations prefixed.
@@ -201,7 +201,6 @@ of (obj key value)
 * Switch
 
 ```cirru
-
 switch a
   1 :1
   2
