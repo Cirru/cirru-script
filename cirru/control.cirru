@@ -5,6 +5,9 @@
 
 && (> 2 1) true
 
+! a
+! (+ a 1)
+
 new String :x :y
 
 . a :b

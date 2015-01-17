@@ -4,7 +4,7 @@ _ = require 'lodash'
 Env = require './env'
 alias = require './alias'
 
-regVariable = /(\w|\$)[\$\w\d]*(\.(\w|\$)[\$\w\d]*)*/
+regVariable = /^@?(\w|\$)[\$\w\d]*(\.(\w|\$)[\$\w\d]*)*$/
 regNumber = /^[+-\.]?[\d\.]+/
 
 space     = type: 'control', name: 'space'
@@ -22,6 +22,7 @@ exports.resolve = (ast) ->
   topState =
     position: 'statement'
     wantReturn: false
+    rewriteThis: false
   pos = 0
   res = transformList ast, topEnv, topState
   [
@@ -39,11 +40,12 @@ transformExpr = (expr, env, state, pos) ->
       position: 'inline'
       wantReturn: state.wantReturn
       parentLength: state.parentLength
+      rewriteThis: state.rewriteThis
 
     res = switch
       when head.text in ['+', '-', '*', '/']
         transformInfixMath expr, env, insideState
-      when head.text in ['>', '==', '<', '&&', '||', '!']
+      when head.text in ['>', '!==', '===', '<', '&&', '||']
         transformInfixOperator expr, env, insideState
       else
         handler = builtins[head.text]
@@ -51,7 +53,7 @@ transformExpr = (expr, env, state, pos) ->
         handler expr, env, insideState, pos, state
     type = 'expr'
   else # token
-    res = transformToken expr
+    res = transformToken expr, env, state
     type = 'token'
   hasBlock = expr[0]?.text in ['for', 'while', 'if', '?=', 'lambda', 'switch', 'cond']
   if (state.position is 'inline') and (type is 'expr') and (not state.bracketFree)
@@ -80,8 +82,14 @@ transformExpr = (expr, env, state, pos) ->
     ]
   res
 
-transformToken = (expr) ->
+transformToken = (expr, env, state) ->
   text = expr.text
+  console.log 'token:', text
+  if state.rewriteThis
+    text = text.replace /^this\./, '_this.'
+    text = text.replace /^\@/, '_this.'
+  else
+    text = text.replace /^\@/, 'this.'
   switch
     when text in ['true', 'false', 'undefined', 'null', 'continute', 'break', 'debugger']
       S text, expr
@@ -90,10 +98,10 @@ transformToken = (expr) ->
       S stringValue, expr
     when text[0] is '/'
       S "/#{text[1..]}/", expr
-    when text[0].match(regNumber)?
+    when text.match(regNumber)?
       numberValue = parseFloat(text).toString()
       S numberValue, expr
-    when text[0].match(regVariable)?
+    when text.match(regVariable)?
       S text, expr
     else
       throw new Error "can recognize ==#{expr.text}=="
@@ -107,6 +115,7 @@ transformInfixOperator = (expr, env, state) ->
   insideState =
     position: 'inline'
     wantReturn: no
+    rewriteThis: state.rewriteThis
   [
     transformExpr first, env, insideState
     space
@@ -145,6 +154,7 @@ builtins =
       position: 'inline'
       wantReturn: false
       bracketFree: yes
+      rewriteThis: state.rewriteThis
     unless variable.text.match(regVariable)?
       throw new Error "path can not be assgined ==#{variable.text}=="
     segmentVar = S variable.text, variable
@@ -159,15 +169,21 @@ builtins =
 
   'evaluate': (expr, env, state) ->
     head = expr[0]
+    nameState =
+      position: 'inline'
+      wantReturn: false
+      bracketFree: false
+      rewriteThis: state.rewriteThis
     insideState =
       position: 'inlineList'
       wantReturn: false
       bracketFree: yes
+      rewriteThis: state.rewriteThis
     unless head.text.match(regVariable)
       throw new Error "can not evaluate #{head.text}"
     tail = expr[1..]
     [
-      S head.text, head
+      transformExpr head, env, nameState
       S '(', head
       transformList tail, env, insideState
       S ')', head
@@ -179,6 +195,8 @@ builtins =
     insideState =
       position: 'inlineList'
       wantReturn: false
+      bracketFree: false
+      rewriteThis: state.rewriteThis
     [
       S '[', head
       transformList tail, env, insideState
@@ -191,6 +209,8 @@ builtins =
     insideState =
       position: 'inline'
       wantReturn: false
+      bracketFree: false
+      rewriteThis: state.rewriteThis
     pairs = body.map (pair, index) ->
       key = pair[0]
       unless _.isObject(key) and key.text[0] is ':'
@@ -231,9 +251,13 @@ builtins =
     argsState =
       position: 'inlineList'
       wantReturn: no
+      bracketFree: false
+      rewriteThis: state.rewriteThis
     insideState =
       position: 'statement'
       wantReturn: yes
+      bracketFree: false
+      rewriteThis: false
     normalArgs = _.isArray args
     if normalArgs
       args.map (x) -> insideEnv.markArgs x.text
@@ -242,7 +266,7 @@ builtins =
     body = expr[2..]
     last = expr[expr.length-1]
     [
-      S 'function(', head
+      S 'function (', head
       if normalArgs then transformList args, env, argsState
       S ') {', head
       indent
@@ -259,6 +283,51 @@ builtins =
       S '}', head
     ]
 
+  '\\=': (expr, env, state) ->
+    head = expr[0]
+    args = expr[1]
+    insideEnv = new Env env
+    argsState =
+      position: 'inlineList'
+      wantReturn: no
+      bracketFree: false
+      rewriteThis: false
+    insideState =
+      position: 'statement'
+      wantReturn: yes
+      bracketFree: false
+      rewriteThis: true
+    normalArgs = _.isArray args
+    if normalArgs
+      args.map (x) -> insideEnv.markArgs x.text
+    else
+      insideEnv.registerVar (S args.text, args)
+    body = expr[2..]
+    last = expr[expr.length-1]
+    [
+      S '(function (_this) {', head
+      indent
+      newline
+      S 'return function (', head
+      if normalArgs then transformList args, env, argsState
+      S ') {', head
+      indent
+      insideEnv
+      unless normalArgs then [
+        newline
+        S args.text, args
+        S ' = [].slice.call(arguments, 0)', head
+        semicolon
+      ]
+      transformList body, insideEnv, insideState
+      unindent
+      newline
+      S '}', head
+      unindent
+      newline
+      S '})(this)', head
+    ]
+
   'new': (expr, env, state) ->
     head = expr[0]
     construct = expr[1]
@@ -266,6 +335,8 @@ builtins =
     insideState =
       position: 'inlineList'
       wantReturn: no
+      bracketFree: false
+      rewriteThis: state.rewriteThis
     before = [
       S 'new', head
       space
@@ -281,6 +352,8 @@ builtins =
     insideState =
       position: 'inline'
       wantReturn: no
+      bracketFree: true
+      rewriteThis: true
     key = expr[2]
     [
       transformExpr dict, env, insideState
@@ -294,6 +367,8 @@ builtins =
     insideState =
       position: 'inline'
       wantReturn: no
+      bracketFree: false
+      rewriteThis: state.rewriteThis
     value = transformExpr expr[1], env, insideState
     [
       S '(typeof ', head
@@ -310,6 +385,8 @@ builtins =
     insideState =
       position: 'inline'
       wantReturn: no
+      bracketFree: false
+      rewriteThis: state.rewriteThis
     unless variable.text.match(regVariable)?
       throw new Error "path can not be assgined ==#{variable.text}=="
     [
@@ -334,6 +411,8 @@ builtins =
     insideState =
       position: 'inline'
       wantReturn: no
+      bracketFree: false
+      rewriteThis: state.rewriteThis
     expr[1..].map (x, index) ->
       [
         S (if index is 0 then '\'\'+ ' else ' + " " + '), head
@@ -348,9 +427,12 @@ builtins =
       position: 'inline'
       wantReturn: no
       bracketFree: yes
+      rewriteThis: state.rewriteThis
     insideState =
       position: 'statement'
       wantReturn: no
+      bracketFree: false
+      rewriteThis: state.rewriteThis
     [
       S 'while (', head
       transformExpr cond, env, condState
@@ -371,9 +453,13 @@ builtins =
     condState =
       position: 'inline'
       wantReturn: no
+      bracketFree: false
+      rewriteThis: state.rewriteThis
     insideState =
       position: 'statement'
       wantReturn: false
+      bracketFree: false
+      rewriteThis: state.rewriteThis
     unless _.isArray(cond) and (cond.length is 3)
       throw new Error 'cond should an array which leng is 3'
     variable = cond[0]
@@ -420,10 +506,15 @@ builtins =
     head = expr[0]
     unless expr.length is 3
       throw new Error 'range takes two arguments'
-    a = S expr[1].text, expr[1]
-    b = S expr[2].text, expr[2]
+    insideState =
+      position: 'inline'
+      wantReturn: false
+      bracketFree: false
+      rewriteThis: state.rewriteThis
+    a = transformExpr expr[1], env, insideState
+    b = transformExpr expr[2], env, insideState
     [
-      S '(function() {', head
+      S '(function () {', head
       indent
       newline
       S 'var _i, _results;', head
@@ -462,10 +553,12 @@ builtins =
         position: 'inline'
         wantReturn: false
         bracketFree: true
+        rewriteThis: state.rewriteThis
       insideState =
         position: 'inline'
         bracketFree: true
         wantReturn: state.wantReturn
+        rewriteThis: state.rewriteThis
       [
         S 'if (', head
         transformExpr cond, env, condState
@@ -486,6 +579,8 @@ builtins =
       condState =
         position: 'inline'
         wantReturn: false
+        bracketFree: false
+        rewriteThis: state.rewriteThis
       [
         transformExpr cond, env, condState
         S '? ', head
@@ -509,6 +604,7 @@ builtins =
       position: 'inline'
       bracketFree: yes
       wantReturn: false
+      rewriteThis: state.rewriteThis
     [
       S 'try {', head
       indent
@@ -537,9 +633,12 @@ builtins =
       position: 'inline'
       wantReturn: false
       bracketFree: true
+      rewriteThis: state.rewriteThis
     insideState =
       position: 'statement'
       wantReturn: if isInline then yes else state.wantReturn
+      bracketFree: false
+      rewriteThis: true
     pairs = body.map (pair) ->
       [
         newline
@@ -566,7 +665,7 @@ builtins =
     ]
     return res unless isInline
     [
-      S '(function() {', head
+      S '(function () {', head
       indent
       newline
       res
@@ -583,9 +682,12 @@ builtins =
       position: 'inline'
       wantReturn: false
       bracketFree: true
+      rewriteThis: state.rewriteThis
     insideState =
       position: 'statement'
       wantReturn: if isInline then yes else state.wantReturn
+      bracketFree: false
+      rewriteThis: true
     pairs = body.map (pair) ->
       console.log pair
       [
@@ -612,7 +714,7 @@ builtins =
     ]
     return res unless isInline
     [
-      S '(function() {', head
+      S '(function () {', head
       indent
       newline
       res
@@ -628,6 +730,7 @@ builtins =
       position: 'inline'
       wantReturn: no
       bracketFree: yes
+      rewriteThis: state.rewriteThis
     [
       S 'throw ', head
       transformExpr body, env, insideState
@@ -640,6 +743,7 @@ builtins =
       position: 'inline'
       wantReturn: no
       bracketFree: yes
+      rewriteThis: state.rewriteThis
     [
       S 'return ', head
       transformExpr body, env, insideState
@@ -654,6 +758,7 @@ builtins =
       position: 'inline'
       wantReturn: no
       bracketFree: yes
+      rewriteThis: false
     pairs = body.map (pair) ->
       [
         newline
@@ -667,7 +772,7 @@ builtins =
       ]
     [
       S name.text, name
-      S ' = (function() {', head
+      S ' = (function () {', head
       indent
       newline
       S 'function ', head
@@ -681,4 +786,17 @@ builtins =
       unindent
       newline
       S '})()', head
+    ]
+
+  '!': (expr, env, state) ->
+    head = expr[0]
+    body = expr[1]
+    insideState =
+      position: 'inline'
+      wantReturn: no
+      bracketFree: false
+      rewriteThis: state.rewriteThis
+    [
+      S '!', head
+      transformExpr body, env, insideState
     ]
