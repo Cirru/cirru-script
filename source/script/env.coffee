@@ -30,7 +30,7 @@ module.exports = class Env
   checkVar: (x) ->
     for item in @varables
       if item.name is x.name
-        return false
+        return true
     if @parent?
       @parent.checkVar x
     else

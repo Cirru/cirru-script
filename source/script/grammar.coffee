@@ -71,7 +71,7 @@ transformExpr = (expr, env, state, pos) ->
       res
     ]
   if state.wantReturn and ((pos + 1) is state.parentLength)
-    unless head?.text in ['if', 'switch', 'cond', 'try']
+    unless head?.text in ['if', 'switch', 'cond', 'try', 'for']
       unless res[0]?.name is 'return '
         res = [
           type: 'control', name: 'return'
@@ -256,14 +256,13 @@ builtins =
       position: 'statement'
       wantReturn: not outsideState.nameSegment?
       bracketFree: false
-      rewriteThis: false
+      rewriteThis: state.rewriteThis
     normalArgs = _.isArray args
     if normalArgs
       args.map (x) -> insideEnv.markArgs x.text
     else
       insideEnv.registerVar (S args.text, args)
     body = expr[2..]
-    last = expr[expr.length-1]
     [
       S 'function ', head
       if outsideState.nameSegment?
@@ -293,7 +292,7 @@ builtins =
       position: 'inlineList'
       wantReturn: no
       bracketFree: false
-      rewriteThis: false
+      rewriteThis: state.rewriteThis
     insideState =
       position: 'statement'
       wantReturn: yes
@@ -354,8 +353,8 @@ builtins =
     insideState =
       position: 'inline'
       wantReturn: no
-      bracketFree: true
-      rewriteThis: true
+      bracketFree: false
+      rewriteThis: state.rewrite
     key = expr[2]
     [
       transformExpr dict, env, insideState
@@ -640,7 +639,7 @@ builtins =
       position: 'statement'
       wantReturn: if isInline then yes else state.wantReturn
       bracketFree: false
-      rewriteThis: true
+      rewriteThis: state.rewriteThis
     pairs = body.map (pair) ->
       [
         newline
@@ -689,7 +688,7 @@ builtins =
       position: 'statement'
       wantReturn: if isInline then yes else state.wantReturn
       bracketFree: false
-      rewriteThis: true
+      rewriteThis: state.rewrite
     pairs = body.map (pair) ->
       [
         newline
@@ -761,7 +760,7 @@ builtins =
       position: 'inline'
       wantReturn: no
       bracketFree: yes
-      rewriteThis: false
+      rewriteThis: state.rewriteThis
     construct = null
     constructState =
       position: 'inline'
