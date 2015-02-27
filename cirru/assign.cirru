@@ -13,7 +13,7 @@ console.log 1
 console.log a b c
 
 array 1 2 3
-object (:a 1) (:b :)
+console.log $ object (:a 1) (:b :)
   :c $ array 1
 
 -- "combine"
