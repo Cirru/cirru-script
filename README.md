@@ -39,6 +39,27 @@ But currently I suggest using [gulp-cirru-script][gulp] to compile the code.
 
 Note: `relativePath` is required, otherwise `source-map` will throw errors.
 
+### Command-line tool
+
+By installing CirruScript at global, you'll get command `cirru-script`(and `cs` for short):
+
+```
+npm i -g cirru-script
+```
+
+```bash
+cs
+# enter REPL
+cirru-script>
+```
+
+```
+cs a.cirru
+# evaluates a file
+```
+
+File compiling and SourceMaps support might come in the future.
+
 ### Syntax
 
 * Comments

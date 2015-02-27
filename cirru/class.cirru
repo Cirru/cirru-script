@@ -7,3 +7,5 @@ class Cat
     a.send $ \= ()
       @print
     b
+
+console.log Cat

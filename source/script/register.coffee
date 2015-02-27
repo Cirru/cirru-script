@@ -10,4 +10,3 @@ if require.extensions?
       path: filename
       relativePath: filename
     module._compile res.js, filename
-  console.log require.extensions
