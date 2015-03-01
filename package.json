@@ -1,13 +1,13 @@
 {
   "name": "cirru-script",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "main": "lib/compiler.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
     "cirru-script": "./bin/cirru-script.js",
-    "cs": "./bin/cirru-script.js"
+    "crs": "./bin/cirru-script.js"
   },
   "author": "jiyinyiyong",
   "license": "MIT",

@@ -41,20 +41,20 @@ Note: `relativePath` is required, otherwise `source-map` will throw errors.
 
 ### Command-line tool
 
-By installing CirruScript at global, you'll get command `cirru-script`(and `cs` for short):
+By installing CirruScript at global, you'll get command `cirru-script`(and `crs` for short):
 
 ```
 npm i -g cirru-script
 ```
 
 ```bash
-cs
+crs
 # enter REPL
 cirru-script>
 ```
 
 ```
-cs a.cirru
+crs a.cirru
 # evaluates a file
 ```
 
