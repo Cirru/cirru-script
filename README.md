@@ -2,6 +2,8 @@
 CirruScript: a JavaScript generator in Cirru Grammar
 ------
 
+[![Join the chat at https://gitter.im/Cirru/cirru-script](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/Cirru/cirru-script?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 *This project is not ready for real world usage.*
 
 Play with CirruScript by typing in here: http://repo.cirru.org/script/
