@@ -146,7 +146,10 @@ transformInfixMath = (expr, env, state, pos) ->
 transformList = (list, env, state) ->
   state.parentLength = list.length
   list.map (expr, pos) ->
-    transformExpr expr, env, state, pos
+    newState = _.clone state
+    if (pos + 1) isnt list.length
+      newState.wantReturn = false
+    transformExpr expr, env, newState, pos
 
 builtins =
   'set': (expr, env, state) ->
