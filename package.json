@@ -1,6 +1,6 @@
 {
   "name": "cirru-script",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "main": "lib/compiler.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
