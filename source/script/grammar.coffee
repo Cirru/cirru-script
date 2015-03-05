@@ -329,7 +329,9 @@ builtins =
       S '}', head
       unindent
       newline
-      S '})(this)', head
+      S '})(', head
+      S (if state.rewriteThis then '_this' else 'this'), head
+      S ')', head
     ]
 
   'new': (expr, env, state) ->
