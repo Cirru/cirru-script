@@ -45,7 +45,7 @@ transformExpr = (expr, env, state, pos) ->
     res = switch
       when head.text in ['+', '-', '*', '/']
         transformInfixMath expr, env, insideState
-      when head.text in ['>', '!==', '===', '<', '&&', '||']
+      when head.text in ['>', '!==', '===', '<', '&&', '||', '>=', '<=']
         transformInfixOperator expr, env, insideState
       else
         handler = builtins[head.text]
