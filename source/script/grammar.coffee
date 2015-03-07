@@ -17,6 +17,9 @@ unindent  = type: 'control', name: 'unindent'
 S = (code, target) ->
   type: 'segment', name: code, x: target.x, y: target.y
 
+safeKey = (text) ->
+  if text.match(/^\w[\w\d]*$/) then text else "'#{text}'"
+
 exports.resolve = (ast) ->
   topEnv = new Env null
   topState =
@@ -221,7 +224,7 @@ builtins =
       value = pair[1]
       [
         newline
-        S key.text[1..], key
+        S (safeKey key.text[1..]), key
         S ':', head
         space
         transformExpr value, env, insideState
