@@ -141,6 +141,7 @@ transformInfixMath = (expr, env, state, pos) ->
   insideState =
     position: 'inline'
     wantReturn: false
+    rewrite: state.rewriteThis
   fold [], (tail.map (x) -> transformExpr x, env, insideState)
 
 transformList = (list, env, state) ->
@@ -359,7 +360,7 @@ builtins =
       position: 'inline'
       wantReturn: no
       bracketFree: false
-      rewriteThis: state.rewrite
+      rewriteThis: state.rewriteThis
     key = expr[2]
     [
       transformExpr dict, env, insideState
@@ -693,7 +694,7 @@ builtins =
       position: 'statement'
       wantReturn: if isInline then yes else state.wantReturn
       bracketFree: false
-      rewriteThis: state.rewrite
+      rewriteThis: state.rewriteThis
     pairs = body.map (pair) ->
       [
         newline
