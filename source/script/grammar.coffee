@@ -380,13 +380,19 @@ builtins =
       bracketFree: false
       rewriteThis: state.rewriteThis
     value = transformExpr expr[1], env, insideState
-    [
-      S '(typeof ', head
-      value
-      S ' !== \'undefined\') && (', head
-      value
-      S ' !== null)', head
-    ]
+    if _.isArray expr[1]
+      [
+        value
+        S ' != null', head
+      ]
+    else
+      [
+        S '(typeof ', head
+        value
+        S ' !== \'undefined\') && (', head
+        value
+        S ' !== null)', head
+      ]
 
   '?=': (expr, env, state) ->
     head = expr[0]
