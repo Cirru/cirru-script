@@ -75,7 +75,7 @@ transformExpr = (expr, env, state, pos) ->
     ]
   if state.wantReturn and ((pos + 1) is state.parentLength)
     unless head?.text in ['if', 'switch', 'cond', 'try', 'for']
-      unless res[0]?.name is 'return '
+      unless res[0]?.name in ['return ', 'return']
         res = [
           type: 'control', name: 'return'
           res
@@ -753,10 +753,15 @@ builtins =
       wantReturn: no
       bracketFree: yes
       rewriteThis: state.rewriteThis
-    [
-      S 'return ', head
-      transformExpr body, env, insideState
-    ]
+    if body?
+      [
+        S 'return ', head
+        transformExpr body, env, insideState
+      ]
+    else
+      [
+        S 'return', head
+      ]
 
   'class': (expr, env, state) ->
     head = expr[0]
