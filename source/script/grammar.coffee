@@ -667,6 +667,10 @@ builtins =
         S ':', head
         indent
         transformList pair[1..], env, insideState
+        unless pair[0].text is 'else' then [
+          newline,
+          S 'break;', head
+        ]
         unindent
       ]
     res = [
