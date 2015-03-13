@@ -907,3 +907,35 @@ builtins =
       newline
       S '}', head
     ]
+  '...': (expr, env, state) ->
+    head = expr[0]
+    variable = expr[1]
+    body = expr[2..]
+    nameState =
+      position: 'inline'
+      wantReturn: false
+      bracketFree: false
+      rewriteThis: state.rewriteThis
+    argsState =
+      position: 'inlineList'
+      wantReturn: false
+      bracketFree: false
+      rewriteThis: state.rewriteThis
+    segmentVar = transformExpr variable, env, nameState
+    segmentBody = body.map (pair) ->
+      method = pair[0]
+      unless method.text[0] is ':'
+        throw new Error 'chain methods require string but : is misssing'
+      args = pair[1..]
+      [
+        newline
+        S '.', head
+        S method.text[1..], method
+        S '(', head
+        transformList args, env, argsState
+        S ')', head
+      ]
+    [
+      segmentVar
+      segmentBody
+    ]

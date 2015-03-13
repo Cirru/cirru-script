@@ -265,6 +265,17 @@ try
 throw $ new Error ":just an error"
 ```
 
+* Chaining
+
+```cirru
+... gulp
+  :src :src/**/*.cirru (object (:base :src))
+  :pipe $ script (object (:dest :../lib))
+  :pipe $ rename (object (:extname :.js))
+  :pipe $ gulp.dest :./lib
+
+```
+
 ### License
 
 MIT
