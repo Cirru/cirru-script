@@ -1,7 +1,9 @@
 
 fs = require 'fs'
+path = require 'path'
 repl = require 'repl'
 vm = require 'vm'
+m = require 'module'
 
 compiler = require './compiler'
 
@@ -29,7 +31,12 @@ else
           path: filename
           relativePath: filename
 
-        cb null, (vm.runInThisContext res.js, filename)
+        dir = process.env.PWD
+        file = path.join dir, 'repl'
+        # https://github.com/joyent/node/issues/9211
+        f = vm.runInThisContext m.wrap(res.js), filename
+
+        cb null, (f exports, require, module, file, dir)
 
       catch err
         cb err
