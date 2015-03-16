@@ -31,12 +31,7 @@ else
           path: filename
           relativePath: filename
 
-        dir = process.env.PWD
-        file = path.join dir, 'repl'
-        # https://github.com/joyent/node/issues/9211
-        f = vm.runInThisContext m.wrap(res.js), filename
-
-        cb null, (f exports, require, module, file, dir)
+        cb null, (vm.runInContext res.js, context)
 
       catch err
         cb err
