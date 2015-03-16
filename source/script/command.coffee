@@ -15,6 +15,7 @@ if filename?
   mainModule = require.main
   mainModule.filename = filename = fs.realpathSync filename
   mainModule.moduleCache and= {}
+  mainModule.paths = m._nodeModulePaths (path.dirname filename)
   code = fs.readFileSync filename, 'utf8'
   res = compiler.compile code,
     path: filename
