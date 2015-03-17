@@ -1,6 +1,11 @@
 
 /build
+/dist
 /cirru
-/source/
-gulpfile.coffee
-index.html
+/src
+
+/gulpfile.*
+/index.*
+/webpack.*
+
+/assets.json

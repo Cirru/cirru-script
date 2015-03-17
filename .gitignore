@@ -1,9 +1,9 @@
 
-bower_components/
 node_modules/
 
 build/
 dist/
+lib/
 
 /index.html
-lib/
+/assets.json

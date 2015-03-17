@@ -1,5 +1,6 @@
 
-compiler = require './script/compiler'
+compiler = require './compiler'
+require './main.css'
 
 setSource = (code) ->
   source = document.querySelector '#source'
