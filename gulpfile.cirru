@@ -27,3 +27,21 @@ gulp.task :coffee $ \ ()
     :pipe $ coffee (object (:dest :../lib) (:bare true))
     :pipe $ rename (object (:extname :.js))
     :pipe $ gulp.dest :./lib/
+
+gulp.task :rsync $ \ (cb)
+  = wrapper $ require :rsyncwrapper
+  wrapper.rsync
+    object
+      :ssh true
+      :src $ array :index.html :dist :cirru
+      :recursive true
+      :args $ array :--verbose
+      :dest :tiye:~/repo/cirru/script/
+      :deleteAll true
+    \ (error stdout stderr cmd)
+      if (? error)
+        do $ throw error
+      if (? stderr)
+        do $ console.error stderr
+        do $ console.log cmd
+      cb
