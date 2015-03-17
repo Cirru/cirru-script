@@ -153,14 +153,29 @@ that means `xs` is the array version of `arguments`.
 * Class
 
 ```cirru
-class Cat
-  :name :kitty
-  :run $ lambda () this.name
+class Animal
+  :name :ani
+  :say $ lambda ()
+    console.log @name this.name
 
   :more $ \ ()
-    a.send $ \= ()
-      @print
-    b
+    setTimeout
+      \= ()
+        @say
+        setTimeout $ \= ()
+          @say
+      , 1000
+    , false
+
+console.log Animal
+
+extends Dog Animal
+  :constructor $ \ ()
+    super
+
+  :name :joe
+  :more $ \ ()
+    super
 ```
 
 * Initialize Objects

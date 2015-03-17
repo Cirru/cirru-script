@@ -318,11 +318,8 @@ builtins =
       insideEnv.registerVar (S args.text, args)
     body = expr[2..]
     last = expr[expr.length-1]
-    [
-      S '(function (_this) {', head
-      indent
-      newline
-      S 'return function (', head
+    main = [
+      S 'function (', head
       if normalArgs then transformList args, env, argsState
       S ') {', head
       indent
@@ -337,9 +334,19 @@ builtins =
       unindent
       newline
       S '}', head
+    ]
+    if state.rewriteThis
+      return main
+    [
+      S '(function (_this) {', head
+      indent
+      newline
+      S 'return ', head
+      main
       unindent
       newline
-      S '})(', head
+      S '}', head
+      S ')(', head
       S (if state.rewriteThis then '_this' else 'this'), head
       S ')', head
     ]
@@ -802,13 +809,16 @@ builtins =
       if pair[0].text is ':constructor'
         construct = pair[1]
         return
+      property = pair[0]
+      if property.text[0] isnt ':'
+        throw new Error 'class properties use : syntax'
       [
         newline
         newline
         S name.text, name
-        S '.prototype[', name
-        transformExpr pair[0], env, nameState
-        S '] = ', name
+        S '.prototype.', name
+        S property.text[1..], property
+        S ' = ', name
         transformExpr pair[1], env, nameState
         semicolon
       ]
@@ -869,17 +879,21 @@ builtins =
         rewriteThis: false
         classSegment: S name.text, name
         varSegment: S pair[0].text[1..], pair[0]
+      property = pair[0]
+      if property.text[0] isnt ':'
+        throw new Error 'in extends, properties use : to start names'
       [
         newline
         newline
         S name.text, name
-        S '.prototype[', name
-        transformExpr pair[0], env, nameState
-        S '] = ', name
+        S '.prototype.', name
+        S property.text[1..], property
+        S ' = ', name
         transformExpr pair[1], env, lambdaState
         semicolon
       ]
     [
+      newline
       S name.text, name
       S ' = (function (__super) {', head
       indent
@@ -887,6 +901,7 @@ builtins =
       S '__extends(', head
       S name.text, name
       S ', __super);', head
+      newline
       newline
       if construct?
         transformExpr construct, env, constructState
