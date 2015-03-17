@@ -44,6 +44,9 @@ transformExpr = (expr, env, state, pos) ->
       wantReturn: state.wantReturn
       parentLength: state.parentLength
       rewriteThis: state.rewriteThis
+      classSegment: state.classSegment
+      varSegment: state.varSegment
+      nameSegment: state.nameSegment
 
     res = switch
       when head.text in ['+', '-', '*', '/']
@@ -264,6 +267,9 @@ builtins =
       wantReturn: not outsideState.nameSegment?
       bracketFree: false
       rewriteThis: state.rewriteThis
+      varSegment: state.varSegment
+      classSegment: state.classSegment
+      nameSegment: state.nameSegment
     normalArgs = _.isArray args
     if normalArgs
       args.map (x) -> insideEnv.markArgs x.text
@@ -734,7 +740,7 @@ builtins =
     return res unless isInline
     [
       S '(function () {', head
-      indent
+      indentf
       newline
       res
       unindent
@@ -827,6 +833,79 @@ builtins =
       unindent
       newline
       S '})()', head
+    ]
+
+  'extends': (expr, env, state) ->
+    head = expr[0]
+    name = expr[1]
+    base = expr[2]
+    body = expr[3..]
+    env.registerVar (S name.text, name)
+    env.registerVar (S '__hasProp', head)
+    env.registerVar (S '__extends', head)
+    if _.isArray name
+      throw new Error 'class name accepts token'
+    nameState =
+      position: 'inline'
+      wantReturn: no
+      bracketFree: yes
+      rewriteThis: state.rewriteThis
+    construct = null
+    constructState =
+      position: 'inline'
+      wantReturn: no
+      bracketFree: yes
+      rewriteThis: false
+      nameSegment: S name.text, name
+    pairs = body.map (pair) ->
+      if pair[0].text is ':constructor'
+        construct = pair[1]
+        constructState.varSegment = S pair[0].text[1..], pair[0]
+        return
+      lambdaState =
+        position: 'inline'
+        wantReturn: no
+        bracketFree: yes
+        rewriteThis: false
+        classSegment: S name.text, name
+        varSegment: S pair[0].text[1..], pair[0]
+      [
+        newline
+        newline
+        S name.text, name
+        S '.prototype[', name
+        transformExpr pair[0], env, nameState
+        S '] = ', name
+        transformExpr pair[1], env, lambdaState
+        semicolon
+      ]
+    [
+      S name.text, name
+      S ' = (function (__super) {', head
+      indent
+      newline
+      S '__extends(', head
+      S name.text, name
+      S ', __super);', head
+      newline
+      if construct?
+        transformExpr construct, env, constructState
+      else
+        [
+          S 'function ', head
+          S name.text, name
+          S '() {}', head
+        ]
+      pairs
+      newline
+      S 'return ', head
+      S name.text, head
+      semicolon
+      unindent
+      newline
+      S '})(', head
+      S base.text, base
+      S ')', head
     ]
 
   '!': (expr, env, state) ->
@@ -938,4 +1017,15 @@ builtins =
     [
       segmentVar
       segmentBody
+    ]
+
+  'super': (expr, env, state) ->
+    head = expr[0]
+    if expr.length > 1
+      throw new Error 'super does not accepts arguments'
+    [
+      state.classSegment or state.nameSegment
+      S '.__super__.', head
+      state.varSegment
+      S '.apply(this, arguments)', head
     ]

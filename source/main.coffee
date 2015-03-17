@@ -10,7 +10,7 @@ setCompiled = (code) ->
   compiled.value = code
 
 req = new XMLHttpRequest
-req.open 'GET', './cirru/chain.cirru'
+req.open 'GET', './cirru/class.cirru'
 # req.open 'GET', 'http://repo/Memkits/pudica/source/utils/dispatcher.cirru'
 req.send()
 req.onload = ->

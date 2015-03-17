@@ -9,3 +9,9 @@ class Cat
     b
 
 console.log Cat
+
+extends Dog Animal
+  :constructor $ \ ()
+  :name :joe
+  :more $ \ ()
+    super

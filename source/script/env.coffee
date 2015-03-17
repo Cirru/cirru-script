@@ -64,4 +64,31 @@ module.exports = class Env
         collections.push type: 'control', name: 'space'
       collections.push x
     collections.push type: 'control', name: 'semicolon'
+    extendsSegment = @getExtends()
+    if extendsSegment?
+      collections.push (@getExtendsCode extendsSegment)
     collections
+
+  getExtends: ->
+    list = @varables.filter (x) ->
+      x.name is '__extends'
+    list[0]
+
+  getExtendsCode: (extendsSegment) ->
+    [
+      type: 'control', name: 'newline'
+    ,
+      type: 'segment'
+      name: '__hasProp = {}.hasOwnProperty;'
+      x: extendsSegment.x
+      y: extendsSegment.y
+    ,
+      type: 'control', name: 'newline'
+    ,
+      type: 'segment'
+      name: '__extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };'
+      x: extendsSegment.x
+      y: extendsSegment.y
+    ,
+      type: 'control', name: 'newline'
+    ]
