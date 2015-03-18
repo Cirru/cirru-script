@@ -1,5 +1,8 @@
 
 class Animal
+
+  @lovely true
+
   :name :ani
   :say $ lambda ()
     console.log @name this.name
@@ -13,12 +16,16 @@ class Animal
       , 1000
     , false
 
-console.log Animal
-
 extends Dog Animal
+
+  @identify $ \ ()
+    console.log :Dog
+
   :constructor $ \ ()
     super
 
   :name :joe
   :more $ \ ()
     super
+
+console.log $ new Dog

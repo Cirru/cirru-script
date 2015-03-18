@@ -810,18 +810,30 @@ builtins =
         construct = pair[1]
         return
       property = pair[0]
-      if property.text[0] isnt ':'
-        throw new Error 'class properties use : syntax'
-      [
-        newline
-        newline
-        S name.text, name
-        S '.prototype.', name
-        S property.text[1..], property
-        S ' = ', name
-        transformExpr pair[1], env, nameState
-        semicolon
-      ]
+      if property.text[0] is ':'
+        [
+          newline
+          newline
+          S name.text, name
+          S '.prototype.', name
+          S property.text[1..], property
+          S ' = ', name
+          transformExpr pair[1], env, nameState
+          semicolon
+        ]
+      else if property.text[0] is '@'
+        [
+          newline
+          newline
+          S name.text, name
+          S '.', name
+          S property.text[1..], property
+          S ' = ', name
+          transformExpr pair[1], env, nameState
+          semicolon
+        ]
+      else
+        throw new Error 'class properties use : or @ syntax'
     [
       S name.text, name
       S ' = (function () {', head
@@ -880,18 +892,30 @@ builtins =
         classSegment: S name.text, name
         varSegment: S pair[0].text[1..], pair[0]
       property = pair[0]
-      if property.text[0] isnt ':'
+      if property.text[0] is ':'
+        [
+          newline
+          newline
+          S name.text, name
+          S '.prototype.', name
+          S property.text[1..], property
+          S ' = ', name
+          transformExpr pair[1], env, lambdaState
+          semicolon
+        ]
+      else if property.text[0] is '@'
+        [
+          newline
+          newline
+          S name.text, name
+          S '.', name
+          S property.text[1..], property
+          S ' = ', name
+          transformExpr pair[1], env, nameState
+          semicolon
+        ]
+      else
         throw new Error 'in extends, properties use : to start names'
-      [
-        newline
-        newline
-        S name.text, name
-        S '.prototype.', name
-        S property.text[1..], property
-        S ' = ', name
-        transformExpr pair[1], env, lambdaState
-        semicolon
-      ]
     [
       newline
       S name.text, name
