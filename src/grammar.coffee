@@ -245,11 +245,9 @@ builtins =
   '--': (expr, env) ->
     head = expr[0]
     content = expr[1]
-    unless _.isObject content
-      throw new Error '-- only supports text'
     [
       S '/* ', head
-      S content.text, content
+      if _.isObject content then S content.text, content
       S ' */', head
     ]
 
@@ -810,7 +808,7 @@ builtins =
         construct = pair[1]
         return
       property = pair[0]
-      if property.text[0] is ':'
+      if property.text[0] is '@'
         [
           newline
           newline
@@ -821,7 +819,7 @@ builtins =
           transformExpr pair[1], env, nameState
           semicolon
         ]
-      else if property.text[0] is '@'
+      else if property.text[0] is ':'
         [
           newline
           newline
@@ -848,6 +846,7 @@ builtins =
           S '() {}', head
         ]
       pairs
+      newline
       newline
       S 'return ', head
       S name.text, head
@@ -892,7 +891,7 @@ builtins =
         classSegment: S name.text, name
         varSegment: S pair[0].text[1..], pair[0]
       property = pair[0]
-      if property.text[0] is ':'
+      if property.text[0] is '@'
         [
           newline
           newline
@@ -903,7 +902,7 @@ builtins =
           transformExpr pair[1], env, lambdaState
           semicolon
         ]
-      else if property.text[0] is '@'
+      else if property.text[0] is ':'
         [
           newline
           newline
@@ -936,6 +935,7 @@ builtins =
           S '() {}', head
         ]
       pairs
+      newline
       newline
       S 'return ', head
       S name.text, head

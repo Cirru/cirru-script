@@ -1,31 +1,32 @@
 
 class Animal
 
-  @lovely true
+  :lovely true
 
-  :name :ani
-  :say $ lambda ()
+  :constructor $ \ ()
+    console.log ":initializing Animal"
+
+  @name :ani
+  @say $ lambda ()
     console.log @name this.name
 
-  :more $ \ ()
+  @more $ \ ()
     setTimeout
       \= ()
         @say
-        setTimeout $ \= ()
-          @say
+        setTimeout $ \= () $ @say
       , 1000
-    , false
 
 extends Dog Animal
 
-  @identify $ \ ()
+  :identify $ \ ()
     console.log :Dog
 
   :constructor $ \ ()
     super
 
-  :name :joe
-  :more $ \ ()
+  @name :joe
+  @more $ \ ()
     super
 
 console.log $ new Dog
