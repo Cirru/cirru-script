@@ -147,7 +147,7 @@ transformInfixMath = (expr, env, state, pos) ->
   insideState =
     position: 'inline'
     wantReturn: false
-    rewrite: state.rewriteThis
+    rewriteThis: state.rewriteThis
   fold [], (tail.map (x) -> transformExpr x, env, insideState)
 
 transformList = (list, env, state) ->

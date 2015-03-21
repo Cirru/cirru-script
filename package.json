@@ -1,6 +1,6 @@
 {
   "name": "cirru-script",
-  "version": "0.1.25",
+  "version": "0.1.26",
   "description": "Generated JavaScript from Cirru Grammar",
   "main": "lib/compiler.js",
   "scripts": {
