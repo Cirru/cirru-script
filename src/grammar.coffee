@@ -18,7 +18,7 @@ S = (code, target) ->
   type: 'segment', name: code, x: target.x, y: target.y
 
 safeKey = (text) ->
-  if text.match(/^\w[\w\d]*$/) then text else "'#{text}'"
+  if text.match(/^\w[\w\d]*$/) then text else JSON.stringify(text)
 
 exports.resolve = (ast) ->
   topEnv = new Env null
