@@ -47,7 +47,7 @@ File compiling and SourceMaps support might come in the future.
 
 ### Syntax
 
-```
+```cirru
 -- "test assignment"
 
 = a 1
