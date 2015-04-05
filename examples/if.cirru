@@ -9,6 +9,6 @@ if (> a 1)
   do
     console.log false
 
-= b $ if (> a 1) :>1 :<=1
+= b $ cond (> a 1) :>1 :<=1
 
 console.log b

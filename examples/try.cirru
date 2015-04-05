@@ -2,10 +2,10 @@
 try
   do
     print x
-  , error
-  do
+  error
     console.error error
 
 try
   do
     print y
+  err

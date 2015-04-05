@@ -6,11 +6,11 @@ switch a
     console.log 2
   else a
 
-= a $ switch 3
+switch 3
   3 :3
   else :else
 
-cond
+switch true
   (> a 1) :1
   (> 2 3) :2
   else
@@ -18,6 +18,6 @@ cond
     console.log 2
 
 set a 4
-= b $ cond
+switch true
   (> a 2) :large
   else :small

@@ -11,24 +11,22 @@ setCompiled = (code) ->
   compiled.value = code
 
 req = new XMLHttpRequest
-req.open 'GET', './cirru/class.cirru'
+req.open 'GET', './examples/try.cirru'
 # req.open 'GET', 'http://repo/Memkits/pudica/source/utils/dispatcher.cirru'
 req.send()
 req.onload = ->
   code = req.responseText
   setSource code
 
-  res = compiler.compile code, {relativePath: 'demo'}
-  setCompiled res.js
-  setCompiled res.js
-  window.c = "#{res.js}\n//# sourceURL=demo.js"
+  js = compiler.compile code
+  setCompiled js
 
 window.onload = ->
   source = document.querySelector '#source'
   source.oninput = (event) ->
     code = source.value
     try
-      res = compiler.compile code, {relativePath: 'demo'}
-      setCompiled res.js
+      js = compiler.compile code
+      setCompiled js
     catch error
       setCompiled error

@@ -17,10 +17,8 @@ if filename?
   mainModule.moduleCache and= {}
   mainModule.paths = m._nodeModulePaths (path.dirname filename)
   code = fs.readFileSync filename, 'utf8'
-  res = compiler.compile code,
-    path: filename
-    relativePath: filename
-  mainModule._compile res.js, mainModule.filename
+  js = compiler.compile
+  mainModule._compile js, mainModule.filename
 
 else
   repl.start
@@ -28,11 +26,8 @@ else
     eval: (input, context, filename, cb) ->
       code = input[1...-1]
       try
-        res = compiler.compile code,
-          path: filename
-          relativePath: filename
-
-        cb null, (vm.runInContext res.js, context)
+        js = compiler.compile code
+        cb null, (vm.runInContext js, context)
 
       catch err
         cb err

@@ -4,19 +4,7 @@ CirruScript: a JavaScript generator in Cirru Grammar
 
 [![Join the chat at https://gitter.im/Cirru/cirru-script](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/Cirru/cirru-script?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-*This project is not ready for real world usage.*
-
 Play with CirruScript by typing in here: http://repo.cirru.org/script/
-
-This package does the following tasks:
-
-* generate JavaScript from Cirru Syntax Tree
-* generate SourseMaps
-
-Read these code to see it before and after compiling:
-
-* https://github.com/Cirru/pudica-schedule/tree/master/source
-* http://repo.cirru.org/pudica/build/
 
 ### Usage
 
@@ -29,33 +17,28 @@ npm i --save cirru-script
 ```coffee
 script = require 'cirru-script'
 code = "console.log :demo"
-options =
-  path: '/root/to/file'
-  relativePath: './relative/to/file'
-script.compile code, options
+script.compile code
 ```
 
-But currently I suggest using [gulp-cirru-script][gulp] to compile the code.
+I use [gulp-cirru-script][gulp] to compile the code.
 
 [gulp]: https://github.com/Cirru/gulp-cirru-script
-
-Note: `relativePath` is required, otherwise `source-map` will throw errors.
 
 ### Command-line tool
 
 By installing CirruScript at global, you'll get command `cirru-script`(and `crs` for short):
 
-```
+```text
 npm i -g cirru-script
 ```
 
-```bash
+```text
 crs
 # enter REPL
 cirru-script>
 ```
 
-```
+```text
 crs a.cirru
 # evaluates a file
 ```
@@ -64,239 +47,132 @@ File compiling and SourceMaps support might come in the future.
 
 ### Syntax
 
-* Comments
-
-```cirru
--- "test assignment"
 ```
+-- "test assignment"
 
-* Assignment and values
-
-```cirru
 = a 1
 = b :string
 = c true
 = d undefined
 = e /^hello\sworld$
-```
 
-Note: Cirru adopts [Polish notation][PN] in which all operations prefixed.
-Especially in CirruScript, `:a` means `"a"`, `/\d` means `/\d/`.
+-- "test values"
 
-[PN]: http://en.wikipedia.org/wiki/Polish_notation
+console.log 1
+console.log a b c
 
-* Data structure
-
-```cirru
 array 1 2 3
-object (:a 1) (:b :)
+console.log $ object (:a 1) (:b :)
   :c $ array 1
+
+-- "combine"
+
+console.log $ array 1 2 3
 
 = e $ array 1 2
 = f $ object
   :a 1
   :c :nothing
-```
 
-* Applying functions
+... gulp
+  src :src/**/*.cirru (object (:base :src))
+  pipe $ script (object (:dest :../lib))
+  pipe $ rename (object (:extname :.js))
+  pipe $ gulp.dest :./lib
 
-```cirru
-console.log 1
-console.log a b c
-console.log $ array 1 2 3
-```
-
-* Simple Math
-
-```cirru
 > 2 1
 
 + 1 2 3
-```
 
-* logical operators
+and (> 2 1) true
 
-```
-and a b
-or a b
 not a
+not (+ a 1)
 
-&& (> 2 1) true
-|| a b
-! a
-! (+ a 1)
-```
-
-* Functions
-
-```cirru
-= f1 $ \ (a b)
-  = a $ + a 2
-  console.log a b
-
-= f2 $ lambda (a)
-  = a 1
-  , a
-
-= f3 $ lambda xs
-  = head $ . xs 0
-  = body $ xs.slice 1
-  return body.length
-```
-
-Note: `\` and `lambda` are identical, corresponding to `->` in CoffeeScript.
-You may found `\=` in the exmaple below, which is like `=>`.
-
-Note: while arguments are not wrapped in an array, but `xs` here,
-that means `xs` is the array version of `arguments`.
-
-* Class
-
-```cirru
-class Animal
-
-  :lovely true
-
-  :constructor $ \ ()
-    console.log ":initializing Animal"
-
-  @name :ani
-  @say $ lambda ()
-    console.log @name this.name
-
-  @more $ \ ()
-    setTimeout
-      \= ()
-        @say
-        setTimeout $ \= () $ @say
-      , 1000
-
-extends Dog Animal
-
-  :identify $ \ ()
-    console.log :Dog
-
-  :constructor $ \ ()
-    super
-
-  @name :joe
-  @more $ \ ()
-    super
-
-console.log $ new Dog
-```
-
-* Initialize Objects
-
-```cirru
 new String :x :y
-```
 
-* Read Properties
-
-```cirru
 . a :b
-a.b
-```
 
-* Detect value
-
-```cirru
 ? a
 
-?= a 1
-
 in a b
-```
 
-* String Concatenation
-
-```cirru
-++: :adding 1 2 :get 3
-```
-
-* While
-
-```cirru
 = x 1
 while (< x 10)
   = x $ + x 1
   console.log x
-```
 
-* Range
+= list $ array 1 2 3 4 5
+= obj $ object (:a 1) (:b 2)
 
-```cirru
-range a b
-```
-
-* Loop over indexes and items in Arrays
-
-```cirru
 for (list index item)
   console.log item index
-```
 
-* Loop over keys and values of Objects
-
-```cirru
-of (obj key value)
+for (obj key value)
   console.log key value
-```
 
-* Switch
+= a 1
 
-```cirru
+if (> a 1)
+  do
+    console.log true
+    console.log true
+    console.log true
+  do
+    console.log false
+
+= b $ cond (> a 1) :>1 :<=1
+
+console.log b
+
+= f1 $ \ (a b)
+  = a $ + a 2
+  console.log a b
+
+= f2 $ \ (a)
+  = a 1
+  , a
+
+= f3 $ \ ((xs))
+  = head $ . xs 0
+  = body $ xs.slice 1
+  return body.length
+
 switch a
   1 :1
   2
-    print 1
-    print 2
+    console.log 1
+    console.log 2
   else a
 
-= a $ switch 3
+switch 3
   3 :3
   else :else
 
-cond
+switch true
   (> a 1) :1
   (> 2 3) :2
   else
-    print 2
-    print 2
+    console.log 2
+    console.log 2
 
 set a 4
-= b $ cond
+switch true
   (> a 2) :large
   else :small
-```
 
-* Try/Catch
+throw $ new Error ":just an error"
 
-```cirru
 try
   do
     print x
-  , error
-  do
+  error
     console.error error
 
 try
   do
     print y
-
-throw $ new Error ":just an error"
-```
-
-* Chaining
-
-```cirru
-... gulp
-  :src :src/**/*.cirru (object (:base :src))
-  :pipe $ script (object (:dest :../lib))
-  :pipe $ rename (object (:extname :.js))
-  :pipe $ gulp.dest :./lib
-
+  err
 ```
 
 ### License
