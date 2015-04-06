@@ -17,7 +17,7 @@ if filename?
   mainModule.moduleCache and= {}
   mainModule.paths = m._nodeModulePaths (path.dirname filename)
   code = fs.readFileSync filename, 'utf8'
-  js = compiler.compile
+  js = compiler.compile code
   mainModule._compile js, mainModule.filename
 
 else
