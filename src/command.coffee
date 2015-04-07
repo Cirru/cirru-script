@@ -24,11 +24,10 @@ else
   repl.start
     prompt: 'cirru-script> '
     eval: (input, context, filename, cb) ->
-      code = input[1...-1]
+      code = input[...-1]
       try
         js = compiler.compile code
         cb null, (vm.runInContext js, context)
 
       catch err
         cb err
-

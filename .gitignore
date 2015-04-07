@@ -2,8 +2,6 @@
 node_modules/
 
 build/
-dist/
 lib/
 
 /index.html
-/assets.json

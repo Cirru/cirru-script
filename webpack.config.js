@@ -23,12 +23,5 @@ module.exports = {
       {test: /\.css$/, loader: 'style!css'},
     ]
   },
-  plugins: [
-    function() {
-       this.plugin('done', function(stats) {
-        content = JSON.stringify(stats.toJson().assetsByChunkName, null, 2)
-        return fs.writeFileSync('assets.json', content)
-      })
-    }
-  ]
+  plugins: []
 }
