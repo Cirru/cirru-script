@@ -8,6 +8,8 @@ Live Docs: http://script.cirru.org/
 
 Play with CirruScript by typing in here: http://repo.cirru.org/script/
 
+The AST transformer of CirruScript is Scirpus https://github.com/Cirru/scirpus .
+
 ### Usage
 
 Here is a demo of calling compiler:

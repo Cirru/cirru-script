@@ -1,6 +1,6 @@
 {
   "name": "cirru-script",
-  "version": "0.2.3",
+  "version": "0.4.26-1",
   "description": "Generated JavaScript from Cirru Grammar",
   "main": "lib/compiler.js",
   "scripts": {
@@ -31,7 +31,7 @@
   "dependencies": {
     "babel-core": "^5.1.10",
     "cirru-parser": "0.10.x",
-    "scirpus": "^0.4.12"
+    "scirpus": "0.4.26"
   },
   "repository": {
     "type": "git",
