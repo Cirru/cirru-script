@@ -21,6 +21,7 @@ module.exports = {
     loaders: [
       {test: /\.coffee$/, loader: 'coffee'},
       {test: /\.css$/, loader: 'style!css'},
+      {test: /\.json$/, loader: 'json'}
     ]
   },
   plugins: []
