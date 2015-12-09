@@ -101,19 +101,8 @@ new String :x :y
 
 in a b
 
-= x 1
-while (< x 10)
-  = x $ + x 1
-  console.log x
-
 = list $ array 1 2 3 4 5
 = obj $ object (:a 1) (:b 2)
-
-for (list index item)
-  console.log item index
-
-for (obj key value)
-  console.log key value
 
 = a 1
 

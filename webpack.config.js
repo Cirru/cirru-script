@@ -15,7 +15,7 @@ module.exports = {
     publicPath: 'http://localhost:8080/build/'
   },
   resolve: {
-    extensions: ['', '.js', '.coffee']
+    extensions: ['', '.js', '.json', '.coffee']
   },
   module: {
     loaders: [
@@ -23,6 +23,11 @@ module.exports = {
       {test: /\.css$/, loader: 'style!css'},
       {test: /\.json$/, loader: 'json'}
     ]
+  },
+  node: {
+    fs: 'empty',
+    module: 'empty',
+    net: 'empty'
   },
   plugins: []
 }
