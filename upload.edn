@@ -1,0 +1,6 @@
+
+{:host "cirru.org"
+ :uploads [{:from "dist/*"
+            :to "cdn/cirru-script/"}
+           {:from "dist/*"
+            :to "repo/Cirru/script/"}]}

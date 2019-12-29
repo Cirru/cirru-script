@@ -14,8 +14,8 @@ The AST transformer of CirruScript is Scirpus https://github.com/Cirru/scirpus .
 
 Here is a demo of calling compiler:
 
-```
-npm i --save cirru-script
+```bash
+yarn add cirru-script
 ```
 
 ```coffee

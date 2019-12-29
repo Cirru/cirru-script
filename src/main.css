@@ -10,21 +10,22 @@ body {
 }
 
 textarea {
-    padding: 8px;
-    font-size: 14px;
-    font-family: Menlo;
-    line-height: 1.5em;
+    flex: 1;
+    padding: 8px 8px 120px 8px;
+    font-size: 13px;
+    font-family: Source Code Pro, Menlo, Consolas, monospace;
+    line-height: 20px;
+    border: 1px solid hsl(0,0%,80%);
+    outline: none;
+    resize: none;
 }
 
 #source {
     width: 50%;
     height: 100%;
-    border: none;
-    display: block;
 }
 
 #compiled {
     width: 50%;
     height: 100%;
-    border: none;
 }
