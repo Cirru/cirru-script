@@ -24,26 +24,22 @@ code = "console.log :demo"
 script.compile code
 ```
 
-I use [gulp-cirru-script][gulp] to compile the code.
-
-[gulp]: https://github.com/Cirru/gulp-cirru-script
-
 ### Command-line tool
 
-By installing CirruScript at global, you'll get command `cirru-script`(and `crs` for short):
+By installing CirruScript at global, you'll get command `cirruscript`(and `crs` for short):
 
 ```text
 npm i -g cirru-script
 ```
 
 ```text
-crs
+cirruscript
 # enter REPL
-cirru-script>
+cirruscript>
 ```
 
 ```text
-crs a.cirru
+cirruscript a.cirru
 # evaluates a file
 ```
 
@@ -52,7 +48,13 @@ File compiling and SourceMaps support might come in the future.
 Add `DISPLAY_JS` for displaying compiled js:
 
 ```bash
-DISPLAY_JS=true crs a.cirru
+DISPLAY_JS=true cirruscript a.cirru
+```
+
+`compile` sub-command can compile code:
+
+```bash
+cirruscript compile from-dir to-dir
 ```
 
 ### Syntax
