@@ -7,9 +7,67 @@ m = require 'module'
 
 compiler = require './compiler'
 
-filename = process.argv[2]
+seperator = '-----------------'
 
-if filename?
+maybeShowJs = (js, filename) ->
+  if process.env.DISPLAY_JS is 'true'
+    console.log()
+    console.log seperator, filename, seperator
+    console.log()
+    console.log js
+    console.log()
+    console.log seperator, filename, seperator
+    console.log()
+
+getAllCirruFiles = (x) ->
+  if fs.statSync(x).isFile()
+    if x.match(/\.cirru$/)
+      return [x]
+    else
+      return []
+  else
+    children = fs.readdirSync x
+    children
+      .flatMap (child) ->
+        if child is 'node_modules'
+          return []
+        else
+          childPath = path.join x, child
+          getAllCirruFiles childPath
+
+if process.argv[2] is 'compile'
+  fromDir = process.argv[3]
+  toDir = process.argv[4]
+
+  if not fromDir? or not toDir?
+    console.log "cirruscript compile {from dir} {to dir}"
+    process.exit 1
+
+  baseFolder = path.join process.env.PWD, fromDir
+
+  allCirruFiles = getAllCirruFiles baseFolder
+  allCirruFiles.forEach (x) ->
+    code = fs.readFileSync x, 'utf8'
+    js = compiler.compile code
+    relativeOne = path.relative baseFolder, x
+    toFilepath = (path.join process.env.PWD, toDir, relativeOne).replace /\.cirru$/, '.js'
+    fs.mkdirSync (path.dirname toFilepath), recursive: true, (err) ->
+      console.log err
+    fs.writeFileSync toFilepath, js
+    console.log (path.relative process.env.PWD, x), '\t->\t', (path.relative process.env.PWD, toFilepath)
+
+else if process.argv[2]?
+  filename = process.argv[2]
+  fullpath = path.join process.env.PWD, filename
+
+  if not fs.existsSync(fullpath)
+    console.log "Found no file", fullpath
+    process.exit 1
+
+  if fs.statSync(fullpath).isDirectory()
+    console.log fullpath, "is a directory. No evaling."
+    process.exit 1
+
   require('./register')
 
   mainModule = require.main
@@ -18,15 +76,19 @@ if filename?
   mainModule.paths = m._nodeModulePaths (path.dirname filename)
   code = fs.readFileSync filename, 'utf8'
   js = compiler.compile code
+
+  maybeShowJs(js)
+
   mainModule._compile js, mainModule.filename
 
 else
   repl.start
-    prompt: 'cirru-script> '
+    prompt: 'cirruscript> '
     eval: (input, context, filename, cb) ->
       code = input[...-1]
       try
         js = compiler.compile code
+        maybeShowJs js, 'REPL'
         cb null, (vm.runInContext js, context)
 
       catch err

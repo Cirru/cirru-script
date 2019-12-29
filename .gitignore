@@ -1,7 +1,6 @@
 
+dist/
 node_modules/
-
-build/
 lib/
 
 /index.html
