@@ -8,6 +8,18 @@ m = require 'module'
 compiler = require './compiler'
 
 filename = process.argv[2]
+seperator = '-----------------'
+
+maybeShowJs = (js, filename) ->
+  if process.env.DISPLAY_JS is 'true'
+    console.log()
+    console.log seperator, filename, seperator
+    console.log()
+    console.log js
+    console.log()
+    console.log seperator, filename, seperator
+    console.log()
+
 
 if filename?
   require('./register')
@@ -18,6 +30,9 @@ if filename?
   mainModule.paths = m._nodeModulePaths (path.dirname filename)
   code = fs.readFileSync filename, 'utf8'
   js = compiler.compile code
+
+  maybeShowJs(js)
+
   mainModule._compile js, mainModule.filename
 
 else
@@ -27,6 +42,7 @@ else
       code = input[...-1]
       try
         js = compiler.compile code
+        maybeShowJs js, 'REPL'
         cb null, (vm.runInContext js, context)
 
       catch err

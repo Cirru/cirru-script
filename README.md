@@ -49,6 +49,12 @@ crs a.cirru
 
 File compiling and SourceMaps support might come in the future.
 
+Add `DISPLAY_JS` for displaying compiled js:
+
+```bash
+DISPLAY_JS=true crs a.cirru
+```
+
 ### Syntax
 
 ```cirru
