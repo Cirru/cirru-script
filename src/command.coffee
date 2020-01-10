@@ -4,6 +4,7 @@ path = require 'path'
 repl = require 'repl'
 vm = require 'vm'
 m = require 'module'
+chalk = require 'chalk'
 
 compiler = require './compiler'
 
@@ -11,13 +12,7 @@ seperator = '-----------------'
 
 maybeShowJs = (js, filename) ->
   if process.env.DISPLAY_JS is 'true'
-    console.log()
-    console.log seperator, filename, seperator
-    console.log()
-    console.log js
-    console.log()
-    console.log seperator, filename, seperator
-    console.log()
+    console.log chalk.gray(js)
 
 getAllCirruFiles = (x) ->
   if fs.statSync(x).isFile()
@@ -82,8 +77,14 @@ else if process.argv[2]?
   mainModule._compile js, mainModule.filename
 
 else
+  console.log()
+  console.log chalk.gray "  Welcome to CirruScript! ."
+  console.log chalk.gray "  Find more at http://script.cirru.org ."
+  console.log chalk.gray "  Press Command D when you want to exit."
+  console.log chalk.gray "  Use DISPLAY_JS=true for displaying generated js."
+  console.log()
   repl.start
-    prompt: 'cirruscript> '
+    prompt: chalk.bold 'cirruscript> '
     eval: (input, context, filename, cb) ->
       code = input[...-1]
       try

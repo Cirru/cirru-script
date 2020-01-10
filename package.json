@@ -1,6 +1,6 @@
 {
   "name": "cirru-script",
-  "version": "0.6.0",
+  "version": "0.6.1-a1",
   "description": "Generated JavaScript from Cirru Grammar",
   "main": "lib/compiler.js",
   "scripts": {
@@ -23,13 +23,13 @@
   "devDependencies": {
     "assets-webpack-plugin": "^3.9.10",
     "babel-preset-stage-2": "^6.24.1",
-    "cirru-script": "^0.6.0-a3",
+    "cirru-script": "^0.6.0",
     "coffee-loader": "^0.9.0",
-    "coffeescript": "^2.4.1",
-    "css-loader": "^3.4.0",
+    "coffeescript": "^2.5.0",
+    "css-loader": "^3.4.1",
     "duplicate-package-checker-webpack-plugin": "^3.0.0",
     "file-loader": "^5.0.2",
-    "http-server": "^0.12.0",
+    "http-server": "^0.12.1",
     "stir-template": "^0.2.2",
     "style-loader": "^1.1.2",
     "webpack": "^4.41.5",
@@ -40,8 +40,9 @@
   },
   "dependencies": {
     "@babel/standalone": "^7.7.7",
+    "chalk": "^3.0.0",
     "cirru-parser": "^0.10.7",
-    "scirpus": "^0.6.0-a2"
+    "scirpus": "^0.6.0"
   },
   "repository": {
     "type": "git",
@@ -51,9 +52,7 @@
     "url": "https://github.com/Cirru/cirru-script/issues"
   },
   "bin": {
-    "cirru-script": "./bin/cirruscript.js",
-    "cirruscript": "./bin/cirruscript.js",
-    "crs": "./bin/cirruscript.js"
+    "cirruscript": "./bin/cirruscript.js"
   },
   "homepage": "https://github.com/Cirru/cirru-script"
 }
