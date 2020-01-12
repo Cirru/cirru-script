@@ -1,5 +1,5 @@
 
-compiler = require './browser'
+compiler = require './compiler'
 require './main.css'
 
 setSource = (code) ->

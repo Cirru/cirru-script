@@ -24,14 +24,6 @@ code = "console.log :demo"
 script.compile code
 ```
 
-For browser usages:
-
-```coffee
-script = require 'cirru-script/lib/browser'
-code = "console.log :demo"
-script.compile code
-```
-
 ### Command-line tool
 
 By installing CirruScript at global, you'll get command `cirruscript`(and `crs` for short):

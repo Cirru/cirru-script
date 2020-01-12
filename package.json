@@ -1,6 +1,6 @@
 {
   "name": "cirru-script",
-  "version": "0.6.1-a2",
+  "version": "0.6.1-a3",
   "description": "Generated JavaScript from Cirru Grammar",
   "main": "lib/compiler.js",
   "scripts": {
@@ -39,8 +39,7 @@
     "webpack-hud": "^0.1.2"
   },
   "dependencies": {
-    "@babel/core": "^7.8.0",
-    "@babel/standalone": "^7.8.0",
+    "@babel/generator": "^7.8.0",
     "chalk": "^3.0.0",
     "cirru-parser": "^0.10.7",
     "scirpus": "^0.6.0"
