@@ -1,14 +1,14 @@
 {
   "name": "cirru-script",
-  "version": "0.6.1-a1",
+  "version": "0.6.1-a2",
   "description": "Generated JavaScript from Cirru Grammar",
   "main": "lib/compiler.js",
   "scripts": {
     "clean": "rm -rfv dist/*",
     "watch": "yarn html && webpack-dev-server --config webpack.dev.cirru",
     "release": "yarn clean && webpack --config webpack.release.cirru && yarn release-html && cp -rv examples dist/",
-    "html": "cirru-script template.cirru",
-    "release-html": "env=release cirru-script template.cirru",
+    "html": "cirruscript template.cirru",
+    "release-html": "env=release cirruscript template.cirru",
     "up": "yarn release && tiye-up",
     "compile": "coffee -o lib/ -bc src/",
     "prepare": "yarn compile",
@@ -23,10 +23,10 @@
   "devDependencies": {
     "assets-webpack-plugin": "^3.9.10",
     "babel-preset-stage-2": "^6.24.1",
-    "cirru-script": "^0.6.0",
+    "cirru-script": "^0.6.1-a1",
     "coffee-loader": "^0.9.0",
     "coffeescript": "^2.5.0",
-    "css-loader": "^3.4.1",
+    "css-loader": "^3.4.2",
     "duplicate-package-checker-webpack-plugin": "^3.0.0",
     "file-loader": "^5.0.2",
     "http-server": "^0.12.1",
@@ -39,7 +39,8 @@
     "webpack-hud": "^0.1.2"
   },
   "dependencies": {
-    "@babel/standalone": "^7.7.7",
+    "@babel/core": "^7.8.0",
+    "@babel/standalone": "^7.8.0",
     "chalk": "^3.0.0",
     "cirru-parser": "^0.10.7",
     "scirpus": "^0.6.0"

@@ -1,5 +1,5 @@
 
-babel = require '@babel/core'
+babel = require '@babel/standalone'
 parser = require 'cirru-parser'
 scirpus = require 'scirpus'
 
