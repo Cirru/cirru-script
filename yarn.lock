@@ -2,10 +2,29 @@
 # yarn lockfile v1
 
 
+"@babel/generator@^7.8.0":
+  version "7.8.0"
+  resolved "https://registry.npm.taobao.org/@babel/generator/download/@babel/generator-7.8.0.tgz?cache=0&sync_timestamp=1578819316082&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2F%40babel%2Fgenerator%2Fdownload%2F%40babel%2Fgenerator-7.8.0.tgz#40a1244677be58ffdc5cd01e22634cd1d5b29edf"
+  integrity sha1-QKEkRne+WP/cXNAeImNM0dWynt8=
+  dependencies:
+    "@babel/types" "^7.8.0"
+    jsesc "^2.5.1"
+    lodash "^4.17.13"
+    source-map "^0.5.0"
+
 "@babel/standalone@^7.7.7":
-  version "7.7.7"
-  resolved "https://registry.npm.taobao.org/@babel/standalone/download/@babel/standalone-7.7.7.tgz#4ab48826641e696bcd3902236b4f7bbb4b611630"
-  integrity sha1-SrSIJmQeaWvNOQIja097u0thFjA=
+  version "7.8.0"
+  resolved "https://registry.npm.taobao.org/@babel/standalone/download/@babel/standalone-7.8.0.tgz#f89a7749a863376bde39bd3cb449f0e46a5d928c"
+  integrity sha1-+Jp3SahjN2veOb08tEnw5Gpdkow=
+
+"@babel/types@^7.8.0":
+  version "7.8.0"
+  resolved "https://registry.npm.taobao.org/@babel/types/download/@babel/types-7.8.0.tgz#1a2039a028057a2c888b668d94c98e61ea906e7f"
+  integrity sha1-GiA5oCgFeiyIi2aNlMmOYeqQbn8=
+  dependencies:
+    esutils "^2.0.2"
+    lodash "^4.17.13"
+    to-fast-properties "^2.0.0"
 
 "@types/color-name@^1.1.1":
   version "1.1.1"
@@ -994,14 +1013,15 @@ cirru-parser@^0.10.7:
   resolved "https://registry.npm.taobao.org/cirru-parser/download/cirru-parser-0.10.7.tgz#0f6fe6f3e343b145fbd30c3505e1adb8be349e32"
   integrity sha1-D2/m8+NDsUX70ww1BeGtuL40njI=
 
-cirru-script@^0.6.0:
-  version "0.6.0"
-  resolved "https://registry.npm.taobao.org/cirru-script/download/cirru-script-0.6.0.tgz#bd8ae72bf132fe9085b82f59e4e2a5047844a5a7"
-  integrity sha1-vYrnK/Ey/pCFuC9Z5OKlBHhEpac=
+cirru-script@^0.6.1-a1:
+  version "0.6.1-a1"
+  resolved "https://registry.npm.taobao.org/cirru-script/download/cirru-script-0.6.1-a1.tgz#0949087d691a88480a1018eb3fb0a1f71ae44765"
+  integrity sha1-CUkIfWkaiEgKEBjrP7Ch9xrkR2U=
   dependencies:
     "@babel/standalone" "^7.7.7"
+    chalk "^3.0.0"
     cirru-parser "^0.10.7"
-    scirpus "^0.6.0-a2"
+    scirpus "^0.6.0"
 
 class-utils@^0.3.5:
   version "0.3.6"
@@ -1263,10 +1283,10 @@ crypto-browserify@^3.11.0:
     randombytes "^2.0.0"
     randomfill "^1.0.3"
 
-css-loader@^3.4.1:
-  version "3.4.1"
-  resolved "https://registry.npm.taobao.org/css-loader/download/css-loader-3.4.1.tgz#dfb7968aa9bffb26bd20375afdffe77d5a234b77"
-  integrity sha1-37eWiqm/+ya9IDda/f/nfVojS3c=
+css-loader@^3.4.2:
+  version "3.4.2"
+  resolved "https://registry.npm.taobao.org/css-loader/download/css-loader-3.4.2.tgz#d3fdb3358b43f233b78501c5ed7b1c6da6133202"
+  integrity sha1-0/2zNYtD8jO3hQHF7XscbaYTMgI=
   dependencies:
     camelcase "^5.3.1"
     cssesc "^3.0.0"
@@ -2616,6 +2636,11 @@ js-tokens@^3.0.2:
   resolved "https://registry.npm.taobao.org/js-tokens/download/js-tokens-3.0.2.tgz#9866df395102130e38f7f996bceb65443209c25b"
   integrity sha1-mGbfOVECEw449/mWvOtlRDIJwls=
 
+jsesc@^2.5.1:
+  version "2.5.2"
+  resolved "https://registry.npm.taobao.org/jsesc/download/jsesc-2.5.2.tgz#80564d2e483dacf6e8ef209650a67df3f0c283a4"
+  integrity sha1-gFZNLkg9rPbo7yCWUKZ98/DCg6Q=
+
 json-parse-better-errors@^1.0.2:
   version "1.0.2"
   resolved "https://registry.npm.taobao.org/json-parse-better-errors/download/json-parse-better-errors-1.0.2.tgz#bb867cfb3450e69107c131d1c514bab3dc8bcaa9"
@@ -2696,7 +2721,7 @@ locate-path@^3.0.0:
     p-locate "^3.0.0"
     path-exists "^3.0.0"
 
-lodash@^4.17.10, lodash@^4.17.11, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.4:
+lodash@^4.17.10, lodash@^4.17.11, lodash@^4.17.13, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.4:
   version "4.17.15"
   resolved "https://registry.npm.taobao.org/lodash/download/lodash-4.17.15.tgz?cache=0&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Flodash%2Fdownload%2Flodash-4.17.15.tgz#b447f6670a0455bbfeedd11392eff330ea097548"
   integrity sha1-tEf2ZwoEVbv+7dETku/zMOoJdUg=
@@ -3733,7 +3758,7 @@ schema-utils@^2.0.1, schema-utils@^2.5.0, schema-utils@^2.6.0:
     ajv "^6.10.2"
     ajv-keywords "^3.4.1"
 
-scirpus@^0.6.0, scirpus@^0.6.0-a2:
+scirpus@^0.6.0:
   version "0.6.0"
   resolved "https://registry.npm.taobao.org/scirpus/download/scirpus-0.6.0.tgz#f0d56e4c9e0f0862d2a7ac5484900d9d2939f51a"
   integrity sha1-8NVuTJ4PCGLSp6xUhJANnSk59Ro=
@@ -3948,7 +3973,7 @@ source-map-url@^0.4.0:
   resolved "https://registry.npm.taobao.org/source-map-url/download/source-map-url-0.4.0.tgz#3e935d7ddd73631b97659956d55128e87b5084a3"
   integrity sha1-PpNdfd1zYxuXZZlW1VEo6HtQhKM=
 
-source-map@^0.5.6:
+source-map@^0.5.0, source-map@^0.5.6:
   version "0.5.7"
   resolved "https://registry.npm.taobao.org/source-map/download/source-map-0.5.7.tgz#8a039d2d1021d22d1ea14c80d8ea468ba2ef3fcc"
   integrity sha1-igOdLRAh0i0eoUyA2OpGi6LvP8w=
@@ -4224,6 +4249,11 @@ to-fast-properties@^1.0.3:
   version "1.0.3"
   resolved "https://registry.npm.taobao.org/to-fast-properties/download/to-fast-properties-1.0.3.tgz#b83571fa4d8c25b82e231b06e3a3055de4ca1a47"
   integrity sha1-uDVx+k2MJbguIxsG46MFXeTKGkc=
+
+to-fast-properties@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.npm.taobao.org/to-fast-properties/download/to-fast-properties-2.0.0.tgz#dc5e698cbd079265bc73e0377681a4e4e83f616e"
+  integrity sha1-3F5pjL0HkmW8c+A3doGk5Og/YW4=
 
 to-object-path@^0.3.0:
   version "0.3.0"

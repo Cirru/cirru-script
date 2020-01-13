@@ -4,19 +4,20 @@ CirruScript: a JavaScript generator in Cirru Grammar
 
 Live Docs: http://script.cirru.org/
 
-[![Join the chat at https://gitter.im/Cirru/cirru-script](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/Cirru/cirru-script?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
 Play with CirruScript by typing in here: http://repo.cirru.org/script/
 
 The AST transformer of CirruScript is Scirpus https://github.com/Cirru/scirpus .
 
 ### Usage
 
-Here is a demo of calling compiler:
+![](https://img.shields.io/npm/v/cirru-script.svg)
+
 
 ```bash
 yarn add cirru-script
 ```
+
+Here is a demo of calling compiler:
 
 ```coffee
 script = require 'cirru-script'
