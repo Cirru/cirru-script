@@ -83,7 +83,15 @@ else
   console.log chalk.gray "  Press Command D when you want to exit."
   console.log chalk.gray "  Use DISPLAY_JS=true for displaying generated js."
   console.log()
-  repl.start
+
+  clipboardy = require 'clipboardy'
+  copy = (x) ->
+    if typeof x is 'string'
+      clipboardy.writeSync x
+    else
+      clipboardy.writeSync (JSON.stringify x, null, 2)
+
+  instance = repl.start
     prompt: chalk.bold 'cirruscript> '
     eval: (input, context, filename, cb) ->
       code = input[...-1]
@@ -94,3 +102,5 @@ else
 
       catch err
         cb err
+
+  instance.context.console.copy = copy
