@@ -86,10 +86,9 @@ else
 
   clipboardy = require 'clipboardy'
   copy = (x) ->
-    if typeof x is 'string'
-      clipboardy.writeSync x
-    else
-      clipboardy.writeSync (JSON.stringify x, null, 2)
+    content = if typeof x is 'string' then x else (JSON.stringify x, null, 2)
+    clipboardy.writeSync content
+    console.log chalk.cyan content
 
   instance = repl.start
     prompt: chalk.bold 'cirruscript> '
