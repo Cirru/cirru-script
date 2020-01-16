@@ -58,6 +58,22 @@ DISPLAY_JS=true cirruscript a.cirru
 cirruscript compile from-dir to-dir
 ```
 
+### Injected functions
+
+There are several command built into REPL for convenience.
+
+Copying data as a string
+
+```cirru
+console.copy :demo
+```
+
+Turn on `DISPLAY_JS` during REPL running:
+
+```cirru
+console.DISPLAY_JS true
+```
+
 ### Syntax
 
 ```cirru

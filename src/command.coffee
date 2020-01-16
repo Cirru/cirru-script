@@ -10,8 +10,10 @@ compiler = require './compiler'
 
 seperator = '-----------------'
 
+DISPLAY_JS = process.env.DISPLAY_JS is 'true'
+
 maybeShowJs = (js, filename) ->
-  if process.env.DISPLAY_JS is 'true'
+  if DISPLAY_JS
     console.log chalk.gray(js)
 
 getAllCirruFiles = (x) ->
@@ -103,3 +105,4 @@ else
         cb err
 
   instance.context.console.copy = copy
+  instance.context.console.DISPLAY_JS = (x) -> DISPLAY_JS = x
