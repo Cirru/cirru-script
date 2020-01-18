@@ -21,6 +21,11 @@
     lodash "^4.17.13"
     to-fast-properties "^2.0.0"
 
+"@cirru/parser.ts@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@cirru/parser.ts/-/parser.ts-0.0.1.tgz#0870b051bd9f56626759ec22d7a0d5c51b19fe9c"
+  integrity sha512-FlUWZ2VqIUK/5cG926CVw9fQ7IGQzRDz8NL2Zc1lK2NyvOltAyZEDxxj/ztWjGOOnetVtM5mDx8rsbsr/SLYhg==
+
 "@types/color-name@^1.1.1":
   version "1.1.1"
   resolved "https://registry.npm.taobao.org/@types/color-name/download/@types/color-name-1.1.1.tgz#1c1261bbeaa10a8055bbc5d8ab84b7b2afc846a0"
