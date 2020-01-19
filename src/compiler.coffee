@@ -1,11 +1,11 @@
 
 generate = require '@babel/generator'
 
-parser = require 'cirru-parser'
+{ parse } = require '@cirru/parser.ts/'
 scirpus = require 'scirpus'
 
 exports.compile = (code, options) ->
-  ast = parser.pare code
+  ast = parse code
   IR = scirpus.transform ast
   res = generate.default IR, {presets: []}, code
   res.code
